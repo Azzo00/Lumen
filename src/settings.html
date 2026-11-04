@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <title>Impostazioni di Lumen</title>
+  <link rel="stylesheet" href="settings.css" />
+</head>
+<body>
+  <header>
+    <img src="logo.png" alt="" width="40" height="40" />
+    <div>
+      <h1>Lumen</h1>
+      <p>Le modifiche vengono salvate e applicate subito.</p>
+    </div>
+    <span class="saved" id="saved">Salvato</span>
+  </header>
+
+  <section>
+    <h2>Modalità</h2>
+    <p class="hint">Le viste che scorri con la rotellina, in quest'ordine.</p>
+    <div class="checks" id="modes"></div>
+  </section>
+
+  <section>
+    <h2>Aspetto</h2>
+    <div class="row">
+      <label for="accent-mode">Colore</label>
+      <select id="accent-mode">
+        <option value="cover">Dalla copertina del brano</option>
+        <option value="fixed">Colore fisso</option>
+      </select>
+      <input type="color" id="accent-color" />
+    </div>
+    <div class="row">
+      <label for="scale">Dimensione</label>
+      <input type="range" id="scale" min="85" max="125" step="5" />
+      <span class="val" id="scale-val"></span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Schermo</h2>
+    <div class="row">
+      <label for="monitor">Monitor</label>
+      <select id="monitor"></select>
+    </div>
+    <div class="row">
+      <label for="position">Posizione</label>
+      <input type="range" id="position" min="0" max="100" step="1" />
+      <button type="button" id="position-center" class="small">Centra</button>
+    </div>
+    <p class="hint">Puoi anche trascinare la notch a destra o a sinistra tenendo premuto il tasto sinistro del mouse.</p>
+    <label class="check"><input type="checkbox" id="hide-fullscreen" /> Nascondi durante giochi, video e presentazioni a schermo intero</label>
+  </section>
+
+  <section>
+    <h2>Notifiche e popup</h2>
+    <label class="check"><input type="checkbox" id="notifications" /> Mostra le notifiche di Windows nella notch (Outlook, Teams, Slack…)</label>
+    <label class="check indent"><input type="checkbox" id="notification-preview" /> Mostra il testo del messaggio (altrimenti solo l'app)</label>
+    <label class="check"><input type="checkbox" id="device-popups" /> Popup per Bluetooth, chiavette USB e alimentatore</label>
+    <label class="check"><input type="checkbox" id="download-popups" /> Popup quando finisce un download (con “Apri” e “Mostra nella cartella”)</label>
+    <p class="hint">Il riquadro standard di Windows resta: per non vederlo due volte, in Impostazioni → Sistema → Notifiche disattiva i “banner” delle app lasciando attivo il centro notifiche.</p>
+  </section>
+
+  <section>
+    <h2>Meteo</h2>
+    <div class="row">
+      <label for="city">Città</label>
+      <input type="text" id="city" placeholder="es. Milano" autocomplete="off" />
+      <button id="city-search">Cerca</button>
+    </div>
+    <div class="results" id="city-results"></div>
+    <p class="hint" id="city-current"></p>
+  </section>
+
+  <section>
+    <h2>Calendario di Outlook</h2>
+    <div class="row">
+      <label for="calendar-source">Origine</label>
+      <select id="calendar-source">
+        <option value="outlook">Outlook classico (in background)</option>
+        <option value="ics">Link ICS pubblicato</option>
+        <option value="off">Nessuno</option>
+      </select>
+    </div>
+    <p class="hint" id="calendar-outlook-hint">Non serve tenere Outlook aperto: ogni 10 minuti Lumen avvia Outlook classico in modo invisibile per circa 20 secondi, legge il calendario e lo richiude. Se Outlook è già aperto lo usa senza chiuderlo.</p>
+    <div class="row" id="calendar-url-row">
+      <label for="calendar-url">Link ICS</label>
+      <input type="url" id="calendar-url" placeholder="https://outlook.office365.com/owa/calendar/…/calendar.ics" autocomplete="off" spellcheck="false" />
+      <button id="calendar-refresh">Aggiorna</button>
+    </div>
+    <p class="hint" id="calendar-status"></p>
+    <details class="hint" id="calendar-ics-help">
+      <summary>Come ottengo il link?</summary>
+      <ol>
+        <li>Apri Outlook sul web (outlook.office.com) → Impostazioni (ingranaggio) → Calendario → Calendari condivisi.</li>
+        <li>In “Pubblica un calendario” scegli il calendario e “Può visualizzare tutti i dettagli”, poi “Pubblica”.</li>
+        <li>Copia il link <b>ICS</b> e incollalo qui sopra.</li>
+      </ol>
+      Il link dà accesso in lettura al calendario a chiunque lo conosca: non condividerlo. Se l'opzione non c'è, l'ha disattivata l'amministratore di Microsoft 365.
+    </details>
+  </section>
+
+  <section>
+    <h2>Git</h2>
+    <div class="row">
+      <label for="git-root">Cartella</label>
+      <input type="text" id="git-root" placeholder="D:\Project" autocomplete="off" spellcheck="false" />
+    </div>
+    <p class="hint">Il pulsante “Git pull” del Command Center esegue <code>git pull --rebase</code> su tutti i repository in questa cartella. Salta quelli con modifiche non committate, senza branch remoto o con un rebase/merge in corso; se un rebase va in conflitto lo annulla. Il dettaglio si apre cliccando il popup del risultato.</p>
+  </section>
+
+  <section>
+    <h2>Sistema</h2>
+    <label class="check"><input type="checkbox" id="autostart" /> Avvia Lumen all'accesso a Windows</label>
+    <div class="row">
+      <label>Versione</label>
+      <span id="app-version" class="val"></span>
+      <button id="update-check">Controlla aggiornamenti</button>
+      <button id="update-install" class="hidden">Installa</button>
+    </div>
+    <p class="hint" id="update-status">Lumen controlla da solo gli aggiornamenti ogni 6 ore (GitHub Releases).</p>
+  </section>
+
+  <script src="settings.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "lumen",
+  "version": "0.4.0",
+  "private": true,
+  "description": "Lumen: notch dinamica per Windows (Tauri + Rust)",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.9.0"
+  }
+}

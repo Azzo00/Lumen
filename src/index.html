@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <title>Lumen</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="pill" data-view="collapsed">
+    <div class="glow"></div>
+
+    <!-- Collapsed / peek -->
+    <div class="view" id="v-collapsed">
+      <div class="mini-left">
+        <div class="mini-art art-box" id="mini-art"></div>
+        <div class="mini-lines">
+          <span id="mini-text"></span>
+          <span id="mini-sub"></span>
+        </div>
+      </div>
+      <div class="bars mini" id="mini-bars"><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+
+    <!-- Music -->
+    <div class="view full" id="v-music">
+      <div class="music-top">
+        <div class="art art-box" id="art"></div>
+        <div class="meta">
+          <div class="app" id="m-app"></div>
+          <div class="title" id="m-title"></div>
+          <div class="artist" id="m-artist"></div>
+        </div>
+        <div class="bars big" id="big-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="progress" id="m-progress">
+        <span id="m-pos">0:00</span>
+        <div class="progress-track" id="m-track" title="Clicca o trascina per spostarti nel brano"><div class="progress-fill" id="m-fill"></div></div>
+        <span id="m-dur">0:00</span>
+      </div>
+      <div class="controls">
+        <button data-cmd="prev" aria-label="Precedente"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zM9.5 12 18 18V6z"/></svg></button>
+        <button data-cmd="toggle" id="btn-toggle" class="main" aria-label="Play/Pausa"></button>
+        <button data-cmd="next" aria-label="Successivo"><svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg></button>
+      </div>
+    </div>
+
+    <!-- Command Center -->
+    <div class="view full" id="v-controls">
+      <div class="tiles">
+        <button class="tile" id="t-wifi">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M12 18a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM8.4 16.2l1.4 1.4a3.1 3.1 0 0 1 4.4 0l1.4-1.4a5.1 5.1 0 0 0-7.2 0zM5 12.8l1.4 1.4a8 8 0 0 1 11.2 0l1.4-1.4a10 10 0 0 0-14 0zM1.6 9.4 3 10.8a12.8 12.8 0 0 1 18 0l1.4-1.4a14.8 14.8 0 0 0-20.8 0z"/></svg>
+          <span class="tile-name">Wi-Fi</span>
+          <span class="tile-sub" id="t-wifi-sub"></span>
+        </button>
+        <button class="tile" id="t-bt">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M7 7l10 10-5 5V2l5 5L7 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="tile-name">Bluetooth</span>
+          <span class="tile-sub" id="t-bt-sub"></span>
+        </button>
+        <button class="tile" id="t-shot" title="Come Win+Maiusc+S">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="3"/></svg>
+          <span class="tile-name">Screenshot</span>
+          <span class="tile-sub">Ritaglia</span>
+        </button>
+        <button class="tile" id="t-git" title="git pull --rebase di tutti i repository">
+          <svg class="ico" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="6" cy="19" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6 7.2v9.6M18 10.2c0 4-4 4.3-10.2 6.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span class="tile-name">Git pull</span>
+          <span class="tile-sub" id="t-git-sub">Tutti i repo</span>
+        </button>
+        <button class="tile" id="t-settings">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+          <span class="tile-name">Lumen</span>
+          <span class="tile-sub">Impostazioni</span>
+        </button>
+      </div>
+      <div class="slider-row">
+        <button class="slider-ico" id="c-mute" aria-label="Muto"></button>
+        <input type="range" min="0" max="100" id="c-volume" />
+        <span class="slider-val" id="c-volume-val"></span>
+      </div>
+      <div class="slider-row" id="c-bright-row">
+        <span class="slider-ico" id="c-bright-ico"></span>
+        <input type="range" min="0" max="100" id="c-bright" />
+        <span class="slider-val" id="c-bright-val"></span>
+      </div>
+    </div>
+
+    <!-- PC stats -->
+    <div class="view full" id="v-pc">
+      <div class="rings">
+        <div class="ring" id="r-cpu">
+          <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring-fg" cx="32" cy="32" r="27"/></svg>
+          <div class="ring-val"><b id="pc-cpu">–</b><span>CPU</span></div>
+        </div>
+        <div class="ring" id="r-ram">
+          <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring-fg" cx="32" cy="32" r="27"/></svg>
+          <div class="ring-val"><b id="pc-ram">–</b><span>RAM</span></div>
+        </div>
+      </div>
+      <div class="pc-info">
+        <div class="pc-line pc-name" id="pc-cpu-name"></div>
+        <div class="pc-line"><span>Memoria</span><span id="pc-ram-text"></span></div>
+        <div class="pc-line"><span id="pc-disk-name">Disco</span><span id="pc-disk-text"></span></div>
+        <div class="pc-bar"><div id="pc-disk-fill"></div></div>
+        <div class="pc-line"><span>Rete</span><span id="pc-net"></span></div>
+        <div class="pc-line"><span>Acceso da</span><span id="pc-uptime"></span></div>
+      </div>
+    </div>
+
+    <!-- Toast: notifications, devices, charger -->
+    <div class="view" id="v-toast">
+      <div class="toast-icon art-box" id="toast-icon"></div>
+      <div class="toast-text">
+        <div class="toast-app" id="toast-app"></div>
+        <div class="toast-title" id="toast-title"></div>
+        <div class="toast-body" id="toast-body"></div>
+      </div>
+      <div class="toast-side" id="toast-side"></div>
+    </div>
+
+    <!-- Volume / brightness popup -->
+    <div class="view" id="v-osd">
+      <span class="osd-ico" id="osd-ico"></span>
+      <div class="osd-track"><div class="osd-fill" id="osd-fill"></div></div>
+      <span class="osd-val" id="osd-val"></span>
+    </div>
+
+    <!-- Status -->
+    <div class="view full" id="v-status">
+      <div class="clock">
+        <div class="time" id="s-time"></div>
+        <div class="date" id="s-date"></div>
+      </div>
+      <div class="weather" id="s-weather">
+        <div class="weather-icon" id="w-icon"></div>
+        <div>
+          <div class="weather-temp" id="w-temp"></div>
+          <div class="weather-desc" id="w-desc"></div>
+        </div>
+      </div>
+      <div class="battery" id="s-battery">
+        <div class="batt-icon"><div class="batt-fill" id="s-batt-fill"></div></div>
+        <div class="batt-pct"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg><span id="s-batt-pct"></span></div>
+      </div>
+    </div>
+
+    <!-- Calendar + Outlook agenda -->
+    <div class="view full" id="v-calendar">
+      <div class="cal">
+        <div class="cal-head" id="c-month"></div>
+        <div class="cal-grid" id="c-grid"></div>
+      </div>
+      <div class="agenda">
+        <div class="agenda-head" id="a-head">Oggi</div>
+        <div class="agenda-list" id="a-list"></div>
+      </div>
+    </div>
+
+    <div class="dots" id="dots"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
