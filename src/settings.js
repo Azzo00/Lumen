@@ -7,6 +7,7 @@ const MODE_LABELS = {
   pc: 'PC (CPU, RAM, disco)',
   status: 'Ora, meteo e batteria',
   calendar: 'Calendario e impegni di Outlook',
+  shelf: 'Mensola (file da trascinare, anche verso il telefono)',
 };
 const ALL_MODES = Object.keys(MODE_LABELS);
 

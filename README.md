@@ -12,6 +12,7 @@ Costruita con **Tauri 2** (backend Rust) e un frontend HTML/CSS/JS senza bundler
 | **Musica** | Copertina, titolo, artista, app sorgente, barra di avanzamento cliccabile/trascinabile per spostarsi nel brano (se il player la fornisce), precedente / play-pausa / successivo, visualizzatore a 12 bande. |
 | **Command Center** | Wi-Fi (rete connessa, on/off), Bluetooth (dispositivi connessi, on/off), Screenshot (apre lo strumento di cattura di Windows, come Win+Maiusc+S, dopo aver richiuso la notch), **Git pull** (al passaggio del mouse mostra quali repository sono indietro rispetto al remoto, solo con `git fetch`; al clic porta ogni repository della cartella progetti su `main`/`master` e fa `git pull --rebase`), accesso alle impostazioni, volume con muto, luminosità dello schermo del portatile. |
 | **PC** | Anelli CPU e RAM, modello del processore, memoria usata, spazio libero sul disco di sistema, velocità di rete in download/upload, temperatura della GPU NVIDIA (con `nvidia-smi`; quella della CPU Windows non la fornisce senza permessi di amministratore). Campionato solo mentre la vista è aperta. |
+| **Mensola** | Trascini un file (o una cartella) sulla notch e resta lì; poi lo trascini fuori dove serve (mail, chat, cartella: viene copiato, l'originale non si sposta). Doppio clic lo apre, tasto destro mostra la cartella. **Telefono** mostra un QR code: il telefono, sulla stessa rete Wi-Fi, apre una pagina da cui scaricare i file della mensola o inviarne dal telefono (finiscono in Download\Dal telefono e nella mensola). |
 | **Stato** | Ora, data, meteo della città scelta (Open-Meteo: ogni 15 minuti, nuovo tentativo dopo 1 minuto se fallisce, aggiornato all'apertura della vista se vecchio; senza rete resta l'ultimo valore valido), batteria come piccola icona con percentuale (verde con fulmine in carica, rossa sotto il 20%). |
 | **Calendario** | Mese corrente con un punto sui giorni che hanno impegni; a destra gli impegni del giorno scelto (oggi di default, clic su un giorno per cambiarlo) con il pulsante **Partecipa** per Teams/Zoom/Meet. Quando una riunione è vicina, aprendo la notch compare direttamente questa vista. |
 
@@ -38,6 +39,16 @@ Altro:
 - **Impostazioni** (icona nella tray → "Impostazioni…", oppure il riquadro nel Command Center): viste attive, colore (dalla copertina o fisso), dimensione, monitor, posizione, schermo intero, notifiche, popup, città del meteo, link ICS del calendario di Outlook, cartella dei repository Git, avvio automatico.
 
 Uso: passa il mouse sulla notch per aprirla, usa la rotellina per cambiare vista. Per chiudere Lumen: icona nella system tray → "Esci da Lumen".
+
+## Mensola e telefono: sicurezza
+
+La condivisione col telefono è un piccolo server HTTP che Lumen avvia solo quando premi **Telefono**:
+- ascolta solo sull'indirizzo della rete Wi-Fi o Ethernet del PC (mai VPN, WSL o adattatori virtuali), quindi non è raggiungibile da internet;
+- ogni indirizzo contiene un codice casuale di 128 bit: senza il QR non si accede a niente;
+- si chiude da solo dopo 10 minuti, o con "Chiudi condivisione";
+- serve solo i file presenti nella mensola; i file ricevuti vengono salvati in `Download\Dal telefono` con un nome ripulito (niente percorsi).
+
+La prima volta Windows può chiedere se consentire a Lumen l'accesso alla rete: va consentito sulle reti private. Su reti aziendali che isolano i dispositivi tra loro il telefono può non raggiungere il PC.
 
 ## Aggiornamenti automatici e versioni
 
@@ -127,6 +138,9 @@ src-tauri/
   src/icons.rs           icona di un'app o di un file (come in Esplora file) in PNG
   src/downloads.rs       popup dei download completati (cartella Download)
   src/updater.rs         aggiornamenti automatici da GitHub Releases
+  src/shelf.rs           mensola: file appoggiati, trascinamento fuori (OLE)
+  src/phone.rs           condivisione col telefono: server locale + QR code
+  src/phone.html         pagina aperta dal telefono
 .github/workflows/release.yml  build, test e Release a ogni tag v*
 ```
 

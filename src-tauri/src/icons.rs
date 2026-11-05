@@ -22,6 +22,12 @@ pub fn app_icon_data_url(aumid: &str, size: i32) -> Option<String> {
 
 /// Icon of any shell item: a file path, or a shell: path.
 pub fn shell_icon_data_url(parsing_name: &str, size: i32) -> Option<String> {
+    let png_bytes = shell_icon_png(parsing_name, size)?;
+    Some(format!("data:image/png;base64,{}", base64::engine::general_purpose::STANDARD.encode(png_bytes)))
+}
+
+/// Same icon as PNG bytes.
+pub fn shell_icon_png(parsing_name: &str, size: i32) -> Option<Vec<u8>> {
     unsafe {
         let path = HSTRING::from(parsing_name);
         let factory: IShellItemImageFactory = SHCreateItemFromParsingName(&path, None).ok()?;
@@ -81,7 +87,7 @@ pub fn shell_icon_data_url(parsing_name: &str, size: i32) -> Option<String> {
             let mut writer = enc.write_header().ok()?;
             writer.write_image_data(&pixels).ok()?;
         }
-        Some(format!("data:image/png;base64,{}", base64::engine::general_purpose::STANDARD.encode(png_bytes)))
+        Some(png_bytes)
     }
 }
 

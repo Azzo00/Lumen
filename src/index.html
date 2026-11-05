@@ -109,6 +109,28 @@
       </div>
     </div>
 
+    <!-- Shelf: files dropped on the notch, to drag out again or send to the phone -->
+    <div class="view full" id="v-shelf">
+      <div class="sh-head">
+        <span class="sh-title">Mensola</span>
+        <span class="sh-count" id="sh-count"></span>
+        <button class="sh-btn" id="sh-phone">Telefono</button>
+        <button class="sh-btn ghost" id="sh-clear">Svuota</button>
+      </div>
+      <div class="sh-list" id="sh-list"></div>
+      <div class="sh-empty" id="sh-empty">Trascina qui un file per tenerlo a portata di mano.<br />Poi lo trascini fuori dove ti serve, o lo mandi al telefono.</div>
+      <div class="sh-drop" id="sh-drop">Rilascia qui</div>
+      <div class="sh-qr hidden" id="sh-qr">
+        <div class="sh-qr-code" id="sh-qr-code"></div>
+        <div class="sh-qr-text">
+          <b>Inquadra con la fotocamera del telefono</b>
+          <span>Il telefono deve essere sulla stessa rete Wi-Fi del PC. Dalla pagina puoi scaricare questi file o inviarne dal telefono.</span>
+          <span class="sh-qr-meta" id="sh-qr-meta"></span>
+          <button class="sh-btn ghost" id="sh-qr-close">Chiudi condivisione</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Toast: notifications, devices, charger -->
     <div class="view" id="v-toast">
       <div class="toast-icon art-box" id="toast-icon"></div>

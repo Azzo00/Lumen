@@ -12,7 +12,9 @@ mod launch;
 mod media;
 mod notify;
 mod pcstats;
+mod phone;
 mod settings;
+mod shelf;
 mod system;
 mod updater;
 
@@ -43,6 +45,15 @@ fn main() {
             agenda::refresh_agenda,
             git::git_pull_all,
             git::git_status_all,
+            shelf::shelf_list,
+            shelf::shelf_add,
+            shelf::shelf_remove,
+            shelf::shelf_clear,
+            shelf::shelf_open,
+            shelf::shelf_reveal,
+            shelf::shelf_drag,
+            phone::phone_share_start,
+            phone::phone_share_stop,
             git::open_git_log,
             launch::open_app,
             launch::open_link,
@@ -95,6 +106,7 @@ fn main() {
             fullscreen::start(handle.clone());
             agenda::start(handle.clone());
             downloads::start(handle.clone());
+            shelf::start(handle.clone());
             updater::start(handle.clone());
             hover::start(handle);
             Ok(())

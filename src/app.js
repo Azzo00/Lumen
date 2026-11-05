@@ -5,7 +5,7 @@ const $ = (id) => document.getElementById(id);
 const pill = $('pill');
 
 // Views reachable with the wheel; replaced by the user's choice in the settings.
-let MODES = ['music', 'controls', 'pc', 'status', 'calendar'];
+let MODES = ['music', 'controls', 'pc', 'status', 'calendar', 'shelf'];
 let settings = null;
 // [width, height, radius] of the pill in each state
 const SIZE = {
@@ -19,6 +19,7 @@ const SIZE = {
   pc: [430, 172, 30],
   status: [440, 130, 30],
   calendar: [500, 222, 30],
+  shelf: [470, 186, 30],
   meeting: [250, 40, 20],
 };
 const PILL_TOP = 6;
@@ -1235,7 +1236,7 @@ window.addEventListener('resize', render);
   let downX = null;
   let dragged = false;
   pill.addEventListener('pointerdown', (e) => {
-    if (e.button !== 0 || e.target.closest('button, input, select, a, .progress-track')) return;
+    if (e.button !== 0 || e.target.closest('button, input, select, a, .progress-track, .sh-item, .sh-qr')) return;
     downX = e.screenX;
     dragged = false;
   });
@@ -1261,4 +1262,142 @@ window.addEventListener('resize', render);
       dragged = false;
     }
   }, true);
+}
+
+/* =====================================================================
+   Shelf: drop files on the notch, drag them out later, or send them to the phone
+   ===================================================================== */
+{
+  let shelf = [];
+  const list = $('sh-list');
+
+  function renderShelf() {
+    list.textContent = '';
+    $('sh-empty').classList.toggle('hidden', shelf.length > 0);
+    $('sh-count').textContent = shelf.length ? `${shelf.length} file` : '';
+    $('sh-clear').classList.toggle('hidden', !shelf.length);
+    for (const it of shelf) {
+      const el = document.createElement('div');
+      el.className = 'sh-item';
+      el.title = `${it.path}\nTrascina per copiarlo dove vuoi · doppio clic per aprirlo · tasto destro per la cartella`;
+      const ico = document.createElement('div');
+      ico.className = 'sh-ico';
+      if (it.icon) ico.style.backgroundImage = `url("${it.icon}")`;
+      else ico.textContent = it.isDir ? '📁' : '📄';
+      const name = document.createElement('div');
+      name.className = 'sh-name';
+      name.textContent = it.name;
+      const size = document.createElement('div');
+      size.className = 'sh-size';
+      size.textContent = it.isDir ? 'Cartella' : fmtBytes(it.size);
+      const x = document.createElement('button');
+      x.className = 'sh-x';
+      x.textContent = '✕';
+      x.title = "Togli dalla mensola (il file resta dov'è)";
+      x.addEventListener('click', (e) => {
+        e.stopPropagation();
+        invoke('shelf_remove', { id: it.id });
+      });
+      el.append(ico, name, size, x);
+      // drag out: a real Windows file drag, as from Explorer
+      let down = null;
+      el.addEventListener('pointerdown', (e) => {
+        if (e.button === 0 && !e.target.closest('.sh-x')) down = [e.screenX, e.screenY];
+      });
+      el.addEventListener('pointermove', (e) => {
+        if (!down || !(e.buttons & 1)) return;
+        if (Math.hypot(e.screenX - down[0], e.screenY - down[1]) > 5) {
+          down = null;
+          invoke('shelf_drag', { id: it.id });
+        }
+      });
+      el.addEventListener('pointerup', () => (down = null));
+      el.addEventListener('dblclick', () => invoke('shelf_open', { id: it.id }));
+      el.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        invoke('shelf_reveal', { id: it.id });
+      });
+      list.appendChild(el);
+    }
+  }
+  listen('shelf', ({ payload }) => {
+    shelf = payload || [];
+    renderShelf();
+  });
+  invoke('shelf_list').then((l) => {
+    shelf = l || [];
+    renderShelf();
+  });
+  $('sh-clear').addEventListener('click', () => invoke('shelf_clear'));
+
+  // files dragged from Explorer (or anywhere) onto the notch
+  let dropping = false;
+  const showShelf = () => {
+    const idx = MODES.indexOf('shelf');
+    if (idx < 0) return false;
+    mode = idx;
+    expand();
+    render();
+    return true;
+  };
+  window.__TAURI__.webview.getCurrentWebview().onDragDropEvent(({ payload: p }) => {
+    if (p.type === 'enter' || p.type === 'over') {
+      if (!dropping && showShelf()) {
+        dropping = true;
+        pill.classList.add('drop-target');
+      }
+    } else if (p.type === 'drop') {
+      const was = dropping;
+      dropping = false;
+      pill.classList.remove('drop-target');
+      if (was && p.paths?.length) invoke('shelf_add', { paths: p.paths });
+      if (!hovering) scheduleCollapse(2500);
+    } else {
+      dropping = false;
+      pill.classList.remove('drop-target');
+      if (!hovering) scheduleCollapse();
+    }
+  });
+
+  // to the phone: QR code of a link on the local network
+  const qr = $('sh-qr');
+  let qrTimer = null;
+  function hideQr() {
+    qr.classList.add('hidden');
+    clearInterval(qrTimer);
+  }
+  $('sh-phone').addEventListener('click', async () => {
+    const meta = $('sh-qr-meta');
+    $('sh-qr-code').innerHTML = '';
+    meta.textContent = 'Avvio della condivisione…';
+    qr.classList.remove('hidden');
+    try {
+      const s = await invoke('phone_share_start');
+      $('sh-qr-code').innerHTML = s.qrSvg;
+      const tick = () => {
+        const left = Math.max(0, Math.round((s.expiresMs - Date.now()) / 60000));
+        meta.textContent = `Rete: ${s.network} · scade alle ${fmtTime.format(new Date(s.expiresMs))} (${left} min)`;
+      };
+      tick();
+      clearInterval(qrTimer);
+      qrTimer = setInterval(tick, 15000);
+    } catch (e) {
+      meta.textContent = String(e);
+    }
+  });
+  $('sh-qr-close').addEventListener('click', () => {
+    invoke('phone_share_stop');
+    hideQr();
+  });
+  listen('phone-share-ended', hideQr);
+  listen('phone-received', ({ payload: r }) => {
+    showToast({
+      app: 'Dal telefono',
+      title: r.name,
+      body: `${fmtBytes(r.size)} · nella mensola e in Download › Dal telefono`,
+      glyph: '📱',
+      duration: 6000,
+      action: () => openViewNow('shelf'),
+    });
+  });
 }

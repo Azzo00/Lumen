@@ -8,7 +8,7 @@ use std::sync::RwLock;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 
-pub const ALL_MODES: [&str; 5] = ["music", "controls", "pc", "status", "calendar"];
+pub const ALL_MODES: [&str; 6] = ["music", "controls", "pc", "status", "calendar", "shelf"];
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", default)]
@@ -30,6 +30,8 @@ pub struct Settings {
     pub notification_preview: bool,
     pub device_popups: bool,
     pub download_popups: bool,
+    /// the shelf view was added to `modes` once (0.6.0); after that the user decides
+    pub shelf_added: bool,
     pub weather_name: String,
     pub weather_lat: Option<f64>,
     pub weather_lon: Option<f64>,
@@ -55,6 +57,7 @@ impl Default for Settings {
             notification_preview: true,
             device_popups: true,
             download_popups: true,
+            shelf_added: false,
             weather_name: String::new(),
             weather_lat: None,
             weather_lon: None,
@@ -67,6 +70,12 @@ impl Default for Settings {
 
 impl Settings {
     fn sanitized(mut self) -> Self {
+        if !self.shelf_added {
+            if !self.modes.iter().any(|m| m == "shelf") {
+                self.modes.push("shelf".into());
+            }
+            self.shelf_added = true;
+        }
         self.modes.retain(|m| ALL_MODES.contains(&m.as_str()));
         self.modes.dedup();
         if self.modes.is_empty() {
