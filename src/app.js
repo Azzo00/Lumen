@@ -736,7 +736,8 @@ invoke('agenda_snapshot').then((a) => a && onAgenda(a));
 /** The meeting the collapsed notch should talk about, if any. */
 function meetingNow(now = Date.now()) {
   const evs = agenda.events.filter((e) => !e.allDay && !e.free && e.end > now);
-  const live = evs.find((e) => e.start <= now && now - e.start <= 10 * MIN);
+  // a meeting that has started stays in the collapsed notch for one minute only
+  const live = evs.find((e) => e.start <= now && now - e.start < MIN);
   if (live) return { e: live, live: true, mins: Math.floor((now - live.start) / MIN) };
   const next = evs.find((e) => e.start > now);
   if (next && next.start - now <= 60 * MIN) return { e: next, live: false, mins: Math.ceil((next.start - now) / MIN) };
@@ -801,7 +802,7 @@ function updateMini() {
   const showMeeting = !!m && (isUrgent(m) || !playing);
   if (showMeeting) {
     text.textContent = m.live
-      ? m.mins < 1 ? 'Inizia ora' : `Iniziata da ${m.mins} min`
+      ? 'Inizia ora'
       : m.mins >= 60 ? 'Riunione tra 1 ora' : `Riunione tra ${m.mins} min`;
     sub.textContent = m.e.title;
     const art = $('mini-art');
