@@ -42,6 +42,7 @@ fn main() {
             agenda::agenda_snapshot,
             agenda::refresh_agenda,
             git::git_pull_all,
+            git::git_status_all,
             git::open_git_log,
             launch::open_app,
             launch::open_link,

@@ -534,9 +534,81 @@ function setGitTile(busy, sub) {
 }
 $('t-git').addEventListener('click', async () => {
   if (gitRunning) return;
+  gitPeekOn = false;
+  $('git-peek').classList.add('hidden');
+  $('git-peek').textContent = '';
   if (await invoke('git_pull_all')) setGitTile(true, 'Avvio…');
 });
 listen('git-progress', ({ payload: p }) => setGitTile(true, `${p.done}/${p.total} repo`));
+
+// Hover: status of every repository without pulling (git fetch of main/master, cached 2 min).
+let gitPeekTimer = null;
+let gitPeekOn = false;
+function gitLine(r) {
+  const where = r.branch && r.branch !== r.main ? ` · sei su ${r.branch}` : '';
+  const dirty = r.dirty ? ' · modifiche locali' : '';
+  let what;
+  if (r.error) what = r.error;
+  else if (r.behind && r.ahead) what = `↓${r.behind} ↑${r.ahead} su ${r.main}`;
+  else if (r.behind) what = `↓${r.behind} su ${r.main}`;
+  else if (r.ahead) what = `↑${r.ahead} da inviare su ${r.main}`;
+  else what = `${r.main} aggiornato`;
+  const row = document.createElement('div');
+  row.className = `gp-row${r.behind ? ' behind' : ''}${r.error ? ' err' : ''}`;
+  const n = document.createElement('b');
+  n.textContent = r.name;
+  const s = document.createElement('span');
+  s.textContent = what + where + dirty;
+  row.append(n, s);
+  return row;
+}
+function renderGitPeek(st) {
+  const box = $('git-peek');
+  box.textContent = '';
+  const head = document.createElement('div');
+  head.className = 'gp-head';
+  if (st.error) {
+    head.textContent = st.error;
+    box.append(head);
+    return;
+  }
+  const behind = st.repos.filter((r) => r.behind > 0);
+  const notable = st.repos.filter((r) => r.behind > 0 || r.ahead > 0 || r.error || r.dirty || (r.branch && r.branch !== r.main));
+  const ok = st.repos.length - notable.length;
+  head.textContent =
+    (behind.length ? `${behind.length} repo indietro rispetto al remoto` : 'Nessun repo indietro') +
+    ` · controllato alle ${fmtTime.format(new Date(st.checkedMs))}`;
+  box.append(head);
+  notable.sort((a, b) => b.behind - a.behind).forEach((r) => box.append(gitLine(r)));
+  if (ok) {
+    const more = document.createElement('div');
+    more.className = 'gp-more';
+    more.textContent = notable.length ? `Altri ${ok} aggiornati` : `Tutti i ${ok} repo sono aggiornati`;
+    box.append(more);
+  }
+  if (!gitRunning) $('t-git-sub').textContent = behind.length ? `${behind.length} indietro` : 'Aggiornati';
+}
+$('t-git').addEventListener('mouseenter', () => {
+  clearTimeout(gitPeekTimer);
+  gitPeekTimer = setTimeout(async () => {
+    if (gitRunning) return;
+    gitPeekOn = true;
+    const box = $('git-peek');
+    box.classList.remove('hidden');
+    if (!box.childElementCount) box.innerHTML = '<div class="gp-head">Controllo dei repository… (solo fetch, nessun pull)</div>';
+    try {
+      const st = await invoke('git_status_all');
+      if (gitPeekOn) renderGitPeek(st);
+    } catch (e) {
+      if (gitPeekOn) box.innerHTML = `<div class="gp-head">Controllo non riuscito</div>`;
+    }
+  }, 350);
+});
+$('t-git').addEventListener('mouseleave', () => {
+  clearTimeout(gitPeekTimer);
+  gitPeekOn = false;
+  $('git-peek').classList.add('hidden');
+});
 listen('git-done', ({ payload: s }) => {
   setGitTile(false, `Fatto alle ${fmtTime.format(new Date())}`);
   if (s.error) {
@@ -859,12 +931,6 @@ function fmtBytes(b) {
   }
   return `${b.toFixed(b < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
 }
-function fmtUptime(secs) {
-  const d = Math.floor(secs / 86400);
-  const h = Math.floor((secs % 86400) / 3600);
-  const m = Math.floor((secs % 3600) / 60);
-  return d ? `${d}g ${h}h` : h ? `${h}h ${m}m` : `${m}m`;
-}
 function setRing(id, pct) {
   const ring = $(id);
   ring.querySelector('.ring-fg').style.strokeDashoffset = `${169.6 * (1 - Math.min(pct, 100) / 100)}`;
@@ -886,7 +952,17 @@ async function samplePc() {
     $('pc-disk-text').textContent = `${fmtBytes(p.diskTotal - p.diskUsed)} liberi`;
     $('pc-disk-fill').style.width = `${diskPct}%`;
     $('pc-net').textContent = `↓ ${fmtBytes(p.netDown)}/s  ↑ ${fmtBytes(p.netUp)}/s`;
-    $('pc-uptime').textContent = fmtUptime(p.uptimeSecs);
+    // GPU only: Windows does not give the CPU temperature without admin rights
+    const temp = $('pc-temp');
+    if (p.gpuTemp != null) {
+      $('pc-temp-name').textContent = `GPU ${p.gpuName || ''}`.trim();
+      temp.textContent = `${Math.round(p.gpuTemp)} °C`;
+      temp.className = p.gpuTemp >= 85 ? 'hot' : p.gpuTemp >= 75 ? 'warm' : '';
+    } else {
+      $('pc-temp-name').textContent = 'Temperatura GPU';
+      temp.textContent = 'non disponibile';
+      temp.className = '';
+    }
   } catch {
     /* backend busy: next tick */
   }

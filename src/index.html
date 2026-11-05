@@ -62,7 +62,7 @@
           <span class="tile-name">Screenshot</span>
           <span class="tile-sub">Ritaglia</span>
         </button>
-        <button class="tile" id="t-git" title="git pull --rebase di tutti i repository">
+        <button class="tile" id="t-git" >
           <svg class="ico" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="6" cy="19" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6 7.2v9.6M18 10.2c0 4-4 4.3-10.2 6.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           <span class="tile-name">Git pull</span>
           <span class="tile-sub" id="t-git-sub">Tutti i repo</span>
@@ -83,6 +83,8 @@
         <input type="range" min="0" max="100" id="c-bright" />
         <span class="slider-val" id="c-bright-val"></span>
       </div>
+      <!-- hovering the Git tile: which repositories are behind (fetch only, no pull) -->
+      <div id="git-peek" class="hidden"></div>
     </div>
 
     <!-- PC stats -->
@@ -103,7 +105,7 @@
         <div class="pc-line"><span id="pc-disk-name">Disco</span><span id="pc-disk-text"></span></div>
         <div class="pc-bar"><div id="pc-disk-fill"></div></div>
         <div class="pc-line"><span>Rete</span><span id="pc-net"></span></div>
-        <div class="pc-line"><span>Acceso da</span><span id="pc-uptime"></span></div>
+        <div class="pc-line" id="pc-temp-line"><span id="pc-temp-name">Temperatura GPU</span><span id="pc-temp"></span></div>
       </div>
     </div>
 

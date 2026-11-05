@@ -998,3 +998,64 @@ input[type="range"]::-webkit-slider-thumb {
 .toast-side .toast-btn:hover {
   filter: brightness(1.15);
 }
+
+/* ---------- PC view: GPU temperature ---------- */
+#pc-temp.warm {
+  color: #ffb347;
+}
+#pc-temp.hot {
+  color: #ff6b6b;
+  font-weight: 650;
+}
+
+/* ---------- Git tile hover: repositories behind the remote ---------- */
+#git-peek {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  top: 96px;
+  bottom: 16px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: rgba(24, 24, 26, 0.97);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+  overflow-y: auto;
+  font-size: 11.5px;
+  line-height: 1.45;
+  pointer-events: none;
+  z-index: 5;
+}
+#git-peek.hidden {
+  display: none;
+}
+#git-peek .gp-head {
+  color: var(--dim);
+  margin-bottom: 3px;
+}
+#git-peek .gp-row {
+  display: flex;
+  gap: 8px;
+  white-space: nowrap;
+}
+#git-peek .gp-row b {
+  flex: none;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 650;
+}
+#git-peek .gp-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--dim);
+}
+#git-peek .gp-row.behind span {
+  color: var(--accent);
+}
+#git-peek .gp-row.err span {
+  color: #ff8a80;
+}
+#git-peek .gp-more {
+  color: var(--dim);
+  margin-top: 2px;
+}

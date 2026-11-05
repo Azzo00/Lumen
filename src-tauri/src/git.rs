@@ -4,6 +4,10 @@
 //! touch automatically are skipped and listed: local uncommitted changes, no
 //! main/master, rebase/merge already in progress. A failed rebase is aborted so the
 //! repository is left as it was. Details go to git-pull.log.
+//!
+//! Hovering the tile shows the status without pulling: `git fetch` of main/master
+//! only (updates origin/<main>, never the working tree), then how many commits the
+//! local main/master is behind or ahead. Cached for 2 minutes.
 
 use std::collections::VecDeque;
 use std::io::Read;
@@ -56,6 +60,9 @@ pub fn git_pull_all(app: AppHandle) -> bool {
     }
     std::thread::spawn(move || {
         let summary = run(&app);
+        if let Ok(mut c) = STATUS.lock() {
+            *c = None;
+        }
         let _ = app.emit("git-done", summary);
         RUNNING.store(false, Ordering::SeqCst);
     });
@@ -212,6 +219,137 @@ fn last_line(s: &str) -> String {
     s.lines().map(str::trim).filter(|l| !l.is_empty() && !l.starts_with("hint:")).last().unwrap_or("errore sconosciuto").to_string()
 }
 
+fn has_ref(repo: &Path, r: &str) -> bool {
+    git(repo, &["rev-parse", "--verify", "--quiet", r]).ok
+}
+
+/// main if it exists (locally or on origin), otherwise master.
+fn main_branch(repo: &Path) -> Option<&'static str> {
+    ["main", "master"]
+        .into_iter()
+        .find(|b| has_ref(repo, &format!("refs/heads/{b}")) || has_ref(repo, &format!("refs/remotes/origin/{b}")))
+}
+
+fn repos_in_root() -> Result<Vec<PathBuf>, String> {
+    let root = PathBuf::from(crate::settings::get().git_root.trim());
+    let mut repos: Vec<PathBuf> = std::fs::read_dir(&root)
+        .map_err(|_| format!("Cartella non trovata: {}", root.display()))?
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.join(".git").exists())
+        .collect();
+    repos.sort_by_key(|p| p.file_name().map(|n| n.to_ascii_lowercase()));
+    Ok(repos)
+}
+
+/* ---------- status on hover (no pull) ---------- */
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RepoStatus {
+    name: String,
+    /// checked-out branch ("" if detached)
+    branch: String,
+    main: String,
+    /// commits on origin/<main> missing from the local <main>
+    behind: u32,
+    /// local commits on <main> not on origin
+    ahead: u32,
+    dirty: bool,
+    error: Option<String>,
+}
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GitStatus {
+    repos: Vec<RepoStatus>,
+    error: Option<String>,
+    /// ms since epoch of the check
+    checked_ms: i64,
+}
+
+static STATUS: Mutex<Option<(Instant, GitStatus)>> = Mutex::new(None);
+const STATUS_TTL: Duration = Duration::from_secs(120);
+
+/// Status of every repository (fetch only). `force` skips the 2-minute cache.
+#[tauri::command]
+pub async fn git_status_all(force: Option<bool>) -> Result<GitStatus, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        // holding the lock while checking: a second hover waits and reuses the result
+        let mut cache = STATUS.lock().map_err(|e| e.to_string())?;
+        if let Some((at, s)) = cache.as_ref() {
+            if !force.unwrap_or(false) && at.elapsed() < STATUS_TTL {
+                return Ok(s.clone());
+            }
+        }
+        let s = status_all();
+        *cache = Some((Instant::now(), s.clone()));
+        Ok(s)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+fn status_all() -> GitStatus {
+    let checked_ms = chrono::Utc::now().timestamp_millis();
+    let repos = match repos_in_root() {
+        Ok(r) => r,
+        Err(e) => return GitStatus { repos: vec![], error: Some(e), checked_ms },
+    };
+    let queue = Arc::new(Mutex::new(repos.into_iter().collect::<VecDeque<_>>()));
+    let out = Arc::new(Mutex::new(Vec::new()));
+    let workers: Vec<_> = (0..WORKERS)
+        .map(|_| {
+            let (queue, out) = (queue.clone(), out.clone());
+            std::thread::spawn(move || loop {
+                let Some(repo) = queue.lock().ok().and_then(|mut q| q.pop_front()) else { break };
+                let s = status_one(&repo);
+                if let Ok(mut o) = out.lock() {
+                    o.push(s);
+                }
+            })
+        })
+        .collect();
+    for w in workers {
+        let _ = w.join();
+    }
+    let mut repos = std::mem::take(&mut *out.lock().unwrap());
+    repos.sort_by_key(|r| r.name.to_lowercase());
+    GitStatus { repos, error: None, checked_ms }
+}
+
+fn status_one(repo: &Path) -> RepoStatus {
+    let name = repo.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+    let cur = git(repo, &["symbolic-ref", "--short", "-q", "HEAD"]);
+    let branch = if cur.ok { cur.stdout.trim().to_string() } else { String::new() };
+    let dirty = !git(repo, &["status", "--porcelain", "--untracked-files=no"]).stdout.trim().is_empty();
+    let mut s = RepoStatus { name, branch, main: String::new(), behind: 0, ahead: 0, dirty, error: None };
+    let Some(main) = main_branch(repo) else {
+        s.error = Some("nessun branch main o master".into());
+        return s;
+    };
+    s.main = main.to_string();
+    let fetch = git(repo, &["fetch", "--quiet", "--no-tags", "origin", main]);
+    if !fetch.ok {
+        s.error = Some(format!("fetch non riuscito: {}", last_line(&fetch.stderr)));
+    }
+    let remote = format!("refs/remotes/origin/{main}");
+    let local = format!("refs/heads/{main}");
+    if !has_ref(repo, &remote) {
+        s.error.get_or_insert_with(|| "nessun branch remoto".into());
+        return s;
+    }
+    let count = |range: String| git(repo, &["rev-list", "--count", &range]).stdout.trim().parse::<u32>().unwrap_or(0);
+    if has_ref(repo, &local) {
+        s.behind = count(format!("{local}..{remote}"));
+        s.ahead = count(format!("{remote}..{local}"));
+    } else {
+        // main only on origin: the pull would create it, nothing is behind
+        s.behind = 0;
+    }
+    s
+}
+
 fn pull_one(repo: &Path, log: &mut String) -> Outcome {
     let git_dir = {
         let o = git(repo, &["rev-parse", "--git-dir"]);
@@ -235,11 +373,8 @@ fn pull_one(repo: &Path, log: &mut String) -> Outcome {
     }
 
     // Always work on the main branch: main if it exists (locally or on origin), otherwise master.
-    let has = |r: String| git(repo, &["rev-parse", "--verify", "--quiet", &r]).ok;
-    let Some(main) = ["main", "master"]
-        .into_iter()
-        .find(|b| has(format!("refs/heads/{b}")) || has(format!("refs/remotes/origin/{b}")))
-    else {
+    let has = |r: String| has_ref(repo, &r);
+    let Some(main) = main_branch(repo) else {
         return Outcome::Skipped(format!("{current}: nessun branch main o master"));
     };
     let mut note = String::new();
@@ -347,6 +482,14 @@ mod tests {
         sh(&a, &["add", "."]);
         sh(&a, &["commit", "-qm", "three"]);
         sh(&a, &["push", "-q"]);
+
+        // status on hover: fetch only, reports behind on main while on feature, pulls nothing
+        let head_before = git(&b, &["rev-parse", "HEAD"]).stdout;
+        let st = status_one(&b);
+        assert_eq!((st.main.as_str(), st.branch.as_str(), st.behind, st.ahead, st.dirty), ("main", "feature", 1, 0, false));
+        assert!(st.error.is_none());
+        assert_eq!(git(&b, &["rev-parse", "HEAD"]).stdout, head_before);
+        assert!(!b.join("g.txt").exists());
         let r = pull_one(&b, &mut log);
         assert!(matches!(r, Outcome::Updated(ref s) if s.starts_with("feature → main") && s.contains("+1")));
         assert_eq!(git(&b, &["branch", "--show-current"]).stdout.trim(), "main");

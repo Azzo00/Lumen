@@ -1,8 +1,16 @@
-//! CPU, memory, system disk, network throughput and uptime for the "PC" view.
+//! CPU, memory, system disk, network throughput and GPU temperature for the "PC" view.
 //! Sampled on demand: the frontend asks only while that view is open.
+//!
+//! Temperatures: Windows gives no CPU temperature to a normal user (the ACPI thermal
+//! zone needs admin rights and is not supported on many laptops; real CPU sensors need a
+//! kernel driver), so only the NVIDIA GPU is read, through nvidia-smi. It runs on its own
+//! thread at most every 3 s so the 1.5 s sampling is never slowed down.
 
+use std::os::windows::process::CommandExt;
+use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use serde::Serialize;
 use sysinfo::{Disks, Networks, System};
@@ -30,7 +38,64 @@ pub struct PcStats {
     /// bytes per second
     net_down: f64,
     net_up: f64,
-    uptime_secs: u64,
+    gpu_name: Option<String>,
+    /// °C
+    gpu_temp: Option<f32>,
+}
+
+struct Gpu {
+    checked: Option<Instant>,
+    /// nvidia-smi missing or failing: stop trying
+    unavailable: bool,
+    reading: Option<(String, f32)>,
+}
+static GPU: Mutex<Gpu> = Mutex::new(Gpu { checked: None, unavailable: false, reading: None });
+static GPU_QUERYING: AtomicBool = AtomicBool::new(false);
+
+/// Last GPU reading; starts a new one in the background when it is older than 3 s.
+fn gpu_temperature() -> Option<(String, f32)> {
+    let mut g = GPU.lock().ok()?;
+    let stale = g.checked.is_none_or(|t| t.elapsed() > Duration::from_secs(3));
+    if !g.unavailable && stale && !GPU_QUERYING.swap(true, Ordering::SeqCst) {
+        g.checked = Some(Instant::now());
+        std::thread::spawn(|| {
+            let r = query_nvidia();
+            if let Ok(mut g) = GPU.lock() {
+                match r {
+                    Some(v) => g.reading = Some(v),
+                    None => {
+                        g.reading = None;
+                        g.unavailable = true;
+                    }
+                }
+            }
+            GPU_QUERYING.store(false, Ordering::SeqCst);
+        });
+    }
+    g.reading.clone()
+}
+
+fn query_nvidia() -> Option<(String, f32)> {
+    let out = Command::new("nvidia-smi")
+        .args(["--query-gpu=name,temperature.gpu", "--format=csv,noheader,nounits"])
+        .stdin(Stdio::null())
+        .stderr(Stdio::null())
+        .creation_flags(0x0800_0000) // CREATE_NO_WINDOW
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    parse_nvidia(&String::from_utf8_lossy(&out.stdout))
+}
+
+/// "NVIDIA RTX 1000 Ada Generation Laptop GPU, 57" → (name, 57.0); first GPU only.
+fn parse_nvidia(s: &str) -> Option<(String, f32)> {
+    let line = s.lines().find(|l| !l.trim().is_empty())?;
+    let (name, temp) = line.rsplit_once(',')?;
+    let temp: f32 = temp.trim().parse().ok()?;
+    let name = name.trim().trim_start_matches("NVIDIA ").replace(" Generation", "").replace(" Laptop GPU", "");
+    Some((name, temp))
 }
 
 /// Virtual adapters (WSL, Hyper-V, VPN tunnels) would count the same traffic twice.
@@ -81,6 +146,7 @@ pub async fn pc_stats() -> Result<PcStats, String> {
         })
         .unwrap_or_default();
 
+    let gpu = gpu_temperature();
     Ok(PcStats {
         cpu: s.sys.global_cpu_usage(),
         cpu_name: s.sys.cpus().first().map(|c| c.brand().trim().to_string()).unwrap_or_default(),
@@ -92,6 +158,23 @@ pub async fn pc_stats() -> Result<PcStats, String> {
         disk_total,
         net_down: down as f64 / secs,
         net_up: up as f64 / secs,
-        uptime_secs: System::uptime(),
+        gpu_name: gpu.as_ref().map(|g| g.0.clone()),
+        gpu_temp: gpu.map(|g| g.1),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_nvidia;
+
+    #[test]
+    fn nvidia_output() {
+        assert_eq!(
+            parse_nvidia("NVIDIA RTX 1000 Ada Generation Laptop GPU, 57\r\n"),
+            Some(("RTX 1000 Ada".to_string(), 57.0))
+        );
+        assert_eq!(parse_nvidia("NVIDIA GeForce RTX 4070, 41\nNVIDIA GeForce RTX 4070, 39\n").map(|g| g.1), Some(41.0));
+        assert_eq!(parse_nvidia("NVIDIA X, [N/A]"), None);
+        assert_eq!(parse_nvidia(""), None);
+    }
 }

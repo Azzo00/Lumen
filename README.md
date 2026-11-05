@@ -10,8 +10,8 @@ Costruita con **Tauri 2** (backend Rust) e un frontend HTML/CSS/JS senza bundler
 |---|---|
 | **Notch chiusa** | Prossima riunione ("Riunione tra 10 min" + titolo) se manca meno di un'ora, oppure il brano in riproduzione con mini-visualizzatore, oppure l'ora. Negli ultimi 15 minuti e nei primi 10 della riunione questa ha la precedenza sulla musica. Al cambio brano si allarga per qualche secondo con titolo e artista. |
 | **Musica** | Copertina, titolo, artista, app sorgente, barra di avanzamento cliccabile/trascinabile per spostarsi nel brano (se il player la fornisce), precedente / play-pausa / successivo, visualizzatore a 12 bande. |
-| **Command Center** | Wi-Fi (rete connessa, on/off), Bluetooth (dispositivi connessi, on/off), Screenshot (apre lo strumento di cattura di Windows, come Win+Maiusc+S, dopo aver richiuso la notch), **Git pull** (porta ogni repository della cartella progetti su `main`/`master` e fa `git pull --rebase`), accesso alle impostazioni, volume con muto, luminosità dello schermo del portatile. |
-| **PC** | Anelli CPU e RAM, modello del processore, memoria usata, spazio libero sul disco di sistema, velocità di rete in download/upload, da quanto è acceso il PC. Campionato solo mentre la vista è aperta. |
+| **Command Center** | Wi-Fi (rete connessa, on/off), Bluetooth (dispositivi connessi, on/off), Screenshot (apre lo strumento di cattura di Windows, come Win+Maiusc+S, dopo aver richiuso la notch), **Git pull** (al passaggio del mouse mostra quali repository sono indietro rispetto al remoto, solo con `git fetch`; al clic porta ogni repository della cartella progetti su `main`/`master` e fa `git pull --rebase`), accesso alle impostazioni, volume con muto, luminosità dello schermo del portatile. |
+| **PC** | Anelli CPU e RAM, modello del processore, memoria usata, spazio libero sul disco di sistema, velocità di rete in download/upload, temperatura della GPU NVIDIA (con `nvidia-smi`; quella della CPU Windows non la fornisce senza permessi di amministratore). Campionato solo mentre la vista è aperta. |
 | **Stato** | Ora, data, meteo della città scelta (Open-Meteo: ogni 15 minuti, nuovo tentativo dopo 1 minuto se fallisce, aggiornato all'apertura della vista se vecchio; senza rete resta l'ultimo valore valido), batteria come piccola icona con percentuale (verde con fulmine in carica, rossa sotto il 20%). |
 | **Calendario** | Mese corrente con un punto sui giorni che hanno impegni; a destra gli impegni del giorno scelto (oggi di default, clic su un giorno per cambiarlo) con il pulsante **Partecipa** per Teams/Zoom/Meet. Quando una riunione è vicina, aprendo la notch compare direttamente questa vista. |
 
@@ -119,7 +119,7 @@ src-tauri/
   src/system.rs          volume, luminosità (WMI), radio Wi-Fi/Bluetooth
   src/devices.rs         popup Bluetooth (con batteria) e chiavette USB
   src/notify.rs          notifiche di Windows (UserNotificationListener)
-  src/pcstats.rs         CPU, RAM, disco, rete, uptime (sysinfo)
+  src/pcstats.rs         CPU, RAM, disco, rete (sysinfo), temperatura GPU (nvidia-smi)
   src/agenda.rs          calendario: Outlook classico (COM) o link ICS (ricorrenze, fusi orari di Windows), link Teams
   src/outlook-calendar.ps1  lettura del calendario di Outlook classico via COM (incluso nell'eseguibile)
   src/git.rs             git pull --rebase di tutti i repository della cartella progetti
@@ -154,5 +154,5 @@ src-tauri/
 
 1. **Scorciatoia da tastiera** per aprire la notch.
 2. **Appunti**: ultimi testi copiati.
-3. **Temperatura CPU/GPU** nella vista PC (richiede driver o permessi di amministratore).
+3. **Temperatura CPU** nella vista PC (richiede un driver e permessi di amministratore).
 4. **Luminosità monitor esterni** via DDC/CI.
