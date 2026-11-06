@@ -3,7 +3,7 @@
 //! A worker thread polls the session and emits `media` only when something changed.
 
 use std::sync::Mutex;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use base64::Engine;
 use serde::Serialize;
@@ -58,15 +58,14 @@ pub fn start(app: AppHandle) {
         com_init();
         let mut manager: Option<SessionManager> = None;
         let mut last: Option<MediaInfo> = None;
-        let mut art_key = String::new();
-        let mut art: Option<String> = None;
+        let mut art = ArtCache::default();
 
         loop {
             if manager.is_none() {
                 manager = request_manager().ok();
             }
             let info = match &manager {
-                Some(m) => read_session(m, &mut art_key, &mut art).unwrap_or_else(|e| {
+                Some(m) => read_session(m, &mut art).unwrap_or_else(|e| {
                     eprintln!("[media] {e:?}");
                     manager = None; // re-request on the next round
                     MediaInfo::default()
@@ -85,7 +84,40 @@ pub fn start(app: AppHandle) {
     });
 }
 
-fn read_session(manager: &SessionManager, art_key: &mut String, art: &mut Option<String>) -> windows::core::Result<MediaInfo> {
+/// Cover of the current track. Players (browsers above all: YouTube, Twitch) publish
+/// the new title first and the new thumbnail a moment later, and when several players
+/// are open the session switch can report the previous thumbnail for a while. So the
+/// cover is read again on every poll for a few seconds after each change, then every
+/// 15 s, and the latest one wins.
+#[derive(Default)]
+struct ArtCache {
+    key: String,
+    art: Option<String>,
+    changed_at: Option<Instant>,
+    checked_at: Option<Instant>,
+}
+
+const ART_SETTLE: Duration = Duration::from_secs(8);
+const ART_RECHECK: Duration = Duration::from_secs(15);
+
+impl ArtCache {
+    fn needs_read(&self, key: &str) -> bool {
+        self.key != key
+            || self.art.is_none()
+            || self.changed_at.is_none_or(|t| t.elapsed() < ART_SETTLE)
+            || self.checked_at.is_none_or(|t| t.elapsed() >= ART_RECHECK)
+    }
+    fn update(&mut self, key: &str, art: Option<String>) {
+        if self.key != key {
+            self.key = key.to_string();
+            self.changed_at = Some(Instant::now());
+        }
+        self.art = art;
+        self.checked_at = Some(Instant::now());
+    }
+}
+
+fn read_session(manager: &SessionManager, cache: &mut ArtCache) -> windows::core::Result<MediaInfo> {
     // No current session is reported as an error by the projection.
     let Ok(session) = manager.GetCurrentSession() else {
         return Ok(MediaInfo::default());
@@ -101,12 +133,9 @@ fn read_session(manager: &SessionManager, art_key: &mut String, art: &mut Option
     let duration_ms = (timeline.EndTime()?.Duration - timeline.StartTime()?.Duration) / 10_000;
     let updated_ms = (timeline.LastUpdatedTime()?.UniversalTime - EPOCH_DIFF_TICKS) / 10_000;
 
-    // The cover is only read again when the track changes, or while it is still missing
-    // (players often publish the thumbnail a moment after the title).
     let key = format!("{app}|{title}|{artist}");
-    if *art_key != key || art.is_none() {
-        *art_key = key;
-        *art = read_cover(&props);
+    if cache.needs_read(&key) {
+        cache.update(&key, read_cover(&props));
     }
 
     Ok(MediaInfo {
@@ -118,7 +147,7 @@ fn read_session(manager: &SessionManager, art_key: &mut String, art: &mut Option
         position_ms,
         duration_ms: duration_ms.max(0),
         updated_ms,
-        art: art.clone(),
+        art: cache.art.clone(),
     })
 }
 
@@ -161,4 +190,32 @@ pub fn media_command(cmd: String, position_ms: Option<i64>) {
             _ => return,
         };
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cover_is_reread_after_a_change() {
+        let mut c = ArtCache::default();
+        assert!(c.needs_read("spotify|a|x"));
+        c.update("spotify|a|x", Some("old".into()));
+        // right after a change: keep reading (the thumbnail may still be the previous one)
+        assert!(c.needs_read("spotify|a|x"));
+        c.update("spotify|a|x", Some("new".into()));
+        assert_eq!(c.art.as_deref(), Some("new"));
+        // settled: no read until the periodic check
+        c.changed_at = Some(Instant::now() - ART_SETTLE);
+        assert!(!c.needs_read("spotify|a|x"));
+        c.checked_at = Some(Instant::now() - ART_RECHECK);
+        assert!(c.needs_read("spotify|a|x"));
+        // another track or player: read at once
+        c.checked_at = Some(Instant::now());
+        assert!(c.needs_read("chrome|twitch live|"));
+        // no cover yet: keep trying
+        c.update("chrome|twitch live|", None);
+        c.changed_at = Some(Instant::now() - ART_SETTLE);
+        assert!(c.needs_read("chrome|twitch live|"));
+    }
 }
