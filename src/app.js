@@ -184,7 +184,10 @@ function render() {
   }
   shape.w.t = w;
   shape.h.t = h;
-  shape.r.t = r;
+  // corners: 0 = squarer (35% of the radius), 0.5 = as designed, 1 = rounder (up to a full pill)
+  const rd = settings?.roundness ?? 0.5;
+  const factor = rd <= 0.5 ? 0.35 + 1.3 * rd : 1 + 2 * (rd - 0.5);
+  shape.r.t = Math.min(h / 2, r * factor);
   // Tell the backend where the pill is, so it only captures the mouse there.
   // While collapsed we use a slightly taller strip so it's easy to hit the top edge.
   const scale = settings?.scale ?? 1;
@@ -324,13 +327,47 @@ function applyTheme() {
 }
 
 function setArt(el) {
-  if (media.active && media.art) {
-    el.style.backgroundImage = `url("${media.art}")`;
-    el.textContent = '';
-  } else {
+  const src = media.active && media.art ? media.art : '';
+  const prev = el.dataset.art || '';
+  el.dataset.art = src;
+  if (!src) {
     el.style.backgroundImage = '';
     el.textContent = media.active && media.title ? media.title.charAt(0).toUpperCase() : '♪';
+    return;
   }
+  if (prev === src) {
+    // same cover: only restore it if something else (the meeting icon) replaced it
+    if (!el.style.backgroundImage && !el.querySelector('.art-slide')) {
+      el.style.backgroundImage = `url("${src}")`;
+      el.textContent = '';
+    }
+    return;
+  }
+  if (prev) slideArt(el, prev, src);
+  else {
+    el.style.backgroundImage = `url("${src}")`;
+    el.textContent = '';
+  }
+}
+
+/* New cover: the old one slides out to the left while the new one comes in from the right. */
+function slideArt(el, prev, src) {
+  el.textContent = '';
+  el.style.backgroundImage = 'none';
+  const layer = (img, cls) => {
+    const d = document.createElement('div');
+    d.className = `art-slide ${cls}`;
+    d.style.backgroundImage = `url("${img}")`;
+    el.appendChild(d);
+    return d;
+  };
+  layer(prev, 'out');
+  const incoming = layer(src, 'in');
+  incoming.addEventListener('animationend', () => {
+    if (el.dataset.art !== src) return; // another change meanwhile
+    el.style.backgroundImage = `url("${src}")`;
+    el.querySelectorAll('.art-slide').forEach((n) => n.remove());
+  });
 }
 
 function updateMusic() {

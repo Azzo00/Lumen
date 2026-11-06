@@ -30,6 +30,8 @@ pub struct Settings {
     pub visualizer: String,
     /// Size multiplier of the pill (0.85 – 1.25).
     pub scale: f64,
+    /// Corner roundness: 0 = squarer, 0.5 = default, 1 = as round as possible.
+    pub roundness: f64,
     /// Monitor name, or "" for the primary monitor.
     pub monitor: String,
     /// Horizontal position along the top edge: 0 = left, 0.5 = centre, 1 = right.
@@ -70,6 +72,7 @@ impl Default for Settings {
             vinyl: false,
             visualizer: "bars".into(),
             scale: 1.0,
+            roundness: 0.5,
             monitor: String::new(),
             position: 0.5,
             hide_fullscreen: true,
@@ -107,6 +110,10 @@ impl Settings {
             self.scale = 1.0;
         }
         self.scale = self.scale.clamp(0.85, 1.25);
+        if !self.roundness.is_finite() {
+            self.roundness = 0.5;
+        }
+        self.roundness = self.roundness.clamp(0.0, 1.0);
         if !self.position.is_finite() {
             self.position = 0.5;
         }

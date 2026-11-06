@@ -104,6 +104,16 @@ async function init() {
     save();
   });
 
+  const round = $('roundness');
+  const roundLabel = (v) => (v < 35 ? 'Squadrati' : v > 65 ? 'Arrotondati' : 'Normali');
+  round.value = Math.round((s.roundness ?? 0.5) * 100);
+  $('roundness-val').textContent = roundLabel(round.value);
+  round.addEventListener('input', () => {
+    s.roundness = Number(round.value) / 100;
+    $('roundness-val').textContent = roundLabel(round.value);
+    save();
+  });
+
   const pos = $('position');
   pos.value = Math.round((s.position ?? 0.5) * 100);
   pos.addEventListener('input', () => {

@@ -241,6 +241,8 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .art-box {
+  position: relative;
+  overflow: hidden;
   background-color: var(--accent);
   background-image: linear-gradient(135deg, var(--accent), var(--accent-2));
   background-size: cover;
@@ -1432,4 +1434,22 @@ html[data-theme="light"] .wx-flake { fill: #8db2e2; }
 @keyframes marquee {
   0%, 22% { transform: translateX(0); }
   100% { transform: translateX(var(--mq-shift)); }
+}
+
+/* ---------- cover change: old slides out, new slides in ---------- */
+.art-slide {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-size: cover;
+  background-position: center;
+  animation: 0.5s cubic-bezier(0.22, 0.8, 0.25, 1) both;
+}
+.art-slide.out { animation-name: art-out; }
+.art-slide.in { animation-name: art-in; }
+@keyframes art-out {
+  to { transform: translateX(-100%) scale(0.85); opacity: 0; }
+}
+@keyframes art-in {
+  from { transform: translateX(100%) scale(0.85); opacity: 0; }
 }
