@@ -282,6 +282,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 #mini-text,
 #mini-sub {
+  display: block;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1413,3 +1414,22 @@ html[data-theme="light"] .wx-flake { fill: #8db2e2; }
   30% { opacity: 0.35; }
 }
 @keyframes wx-slide { from { transform: translateX(-3px); } to { transform: translateX(3px); } }
+
+/* ---------- long titles scroll instead of being cut ---------- */
+.marquee {
+  text-overflow: clip !important;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 6px, #000 calc(100% - 16px), transparent);
+  mask-image: linear-gradient(90deg, transparent 0, #000 6px, #000 calc(100% - 16px), transparent);
+}
+.marquee .mq {
+  display: inline-flex;
+  gap: 36px;
+  animation: marquee var(--mq-dur, 10s) linear infinite;
+}
+.marquee .mq span {
+  flex: none;
+}
+@keyframes marquee {
+  0%, 22% { transform: translateX(0); }
+  100% { transform: translateX(var(--mq-shift)); }
+}

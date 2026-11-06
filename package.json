@@ -1,6 +1,6 @@
 {
   "name": "lumen",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "private": true,
   "description": "Lumen: notch dinamica per Windows (Tauri + Rust)",
   "scripts": {

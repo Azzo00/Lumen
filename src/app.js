@@ -197,6 +197,7 @@ function render() {
     },
   });
   onViewChanged();
+  refitMarquees();
 }
 
 function expand() {
@@ -274,6 +275,54 @@ function prettyApp(id = '') {
   return id.split(/[\\!]/).pop().replace(/\.exe$/i, '');
 }
 
+/* Long titles scroll (two copies side by side, looping) instead of ending in "…". */
+const MARQUEE_GAP = 36;
+const MARQUEE_SPEED = 30; // px per second
+function setText(el, text) {
+  if (el.dataset.text === text) return;
+  el.dataset.text = text;
+  el.dataset.fitW = '';
+  fitMarquee(el);
+}
+function fitMarquee(el) {
+  const text = el.dataset.text ?? el.textContent;
+  const boxW = el.clientWidth;
+  if (el.dataset.fitW === String(boxW)) return; // same text, same room: keep scrolling
+  el.dataset.fitW = String(boxW);
+  el.classList.remove('marquee');
+  el.textContent = text;
+  if (!boxW || el.scrollWidth <= boxW + 1) return;
+  const shift = el.scrollWidth + MARQUEE_GAP;
+  const mq = document.createElement('span');
+  mq.className = 'mq';
+  for (let i = 0; i < 2; i++) {
+    const s = document.createElement('span');
+    s.textContent = text;
+    if (i) s.setAttribute('aria-hidden', 'true');
+    mq.appendChild(s);
+  }
+  el.textContent = '';
+  el.appendChild(mq);
+  el.style.setProperty('--mq-shift', `-${shift}px`);
+  // 22% of the cycle is the pause at the start
+  el.style.setProperty('--mq-dur', `${(shift / MARQUEE_SPEED / 0.78).toFixed(1)}s`);
+  el.classList.add('marquee');
+}
+function refitMarquees() {
+  ['m-title', 'mini-text'].forEach((id) => {
+    const el = $(id);
+    if (el.dataset.text != null) fitMarquee(el);
+  });
+}
+
+const lightQuery = matchMedia('(prefers-color-scheme: light)');
+function applyTheme() {
+  const t = settings?.theme || 'auto';
+  // Windows' own setting (from the backend); the browser media query only as a fallback
+  const light = sys ? sys.lightTheme : lightQuery.matches;
+  document.documentElement.dataset.theme = t === 'auto' ? (light ? 'light' : 'dark') : t;
+}
+
 function setArt(el) {
   if (media.active && media.art) {
     el.style.backgroundImage = `url("${media.art}")`;
@@ -286,7 +335,7 @@ function setArt(el) {
 
 function updateMusic() {
   const playing = media.active && media.playing;
-  $('m-title').textContent = media.active ? media.title || 'Brano sconosciuto' : 'Niente in riproduzione';
+  setText($('m-title'), media.active ? media.title || 'Brano sconosciuto' : 'Niente in riproduzione');
   $('m-artist').textContent = media.active ? media.artist || '' : 'Avvia musica da Spotify, browser…';
   $('m-app').textContent = media.active ? prettyApp(media.app) : '';
   setArt($('art'));
@@ -439,7 +488,7 @@ function applyAccentFromArt(src) {
     let [h, s, l] = rgbToHsl(r / wsum, g / wsum, b / wsum);
     if (!fixed) {
       // keep it readable on the pill (darker on the light theme)
-      const light = settings?.theme === 'light';
+      const light = document.documentElement.dataset.theme === 'light';
       s = Math.max(s, 0.45);
       l = light ? Math.min(Math.max(l, 0.36), 0.48) : Math.min(Math.max(l, 0.55), 0.7);
       root.setProperty('--accent', `hsl(${h} ${s * 100}% ${l * 100}%)`);
@@ -530,6 +579,10 @@ function renderControls() {
 function onSystem(next) {
   const prev = sys;
   sys = next;
+  if (settings?.theme === 'auto' && prev?.lightTheme !== next.lightTheme) {
+    applyTheme();
+    applyAccentFromArt(media.art);
+  }
   renderControls();
   if (!prev) return;
   // changed from outside Lumen (keyboard keys, Windows flyout...) → show the popup
@@ -961,9 +1014,9 @@ function updateMini() {
   // An imminent meeting beats the music; otherwise it only replaces the clock.
   const showMeeting = !!m && (isUrgent(m) || !playing);
   if (showMeeting) {
-    text.textContent = m.live
+    setText(text, m.live
       ? 'Inizia ora'
-      : m.mins >= 60 ? 'Riunione tra 1 ora' : `Riunione tra ${m.mins} min`;
+      : m.mins >= 60 ? 'Riunione tra 1 ora' : `Riunione tra ${m.mins} min`);
     sub.textContent = m.e.title;
     const art = $('mini-art');
     art.style.backgroundImage = '';
@@ -971,10 +1024,10 @@ function updateMini() {
   } else {
     setArt($('mini-art'));
     if (playing) {
-      text.textContent = media.title || 'In riproduzione';
+      setText(text, media.title || 'In riproduzione');
       sub.textContent = media.artist || prettyApp(media.app);
     } else {
-      text.textContent = fmtTime.format(new Date());
+      setText(text, fmtTime.format(new Date()));
     }
   }
   pill.classList.toggle('urgent', showMeeting && isUrgent(m));
@@ -999,7 +1052,7 @@ function applySettings(next) {
     document.documentElement.style.setProperty('--accent-2', settings.accentColor);
   }
   const html = document.documentElement;
-  html.dataset.theme = settings.theme || 'dark';
+  applyTheme();
   html.dataset.viz = settings.visualizer || 'bars';
   if (settings.vinyl) html.dataset.vinyl = '';
   else delete html.dataset.vinyl;

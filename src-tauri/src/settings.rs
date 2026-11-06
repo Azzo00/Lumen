@@ -18,7 +18,7 @@ pub struct Settings {
     /// "cover" = colour taken from the album art, "fixed" = `accent_color`.
     pub accent_mode: String,
     pub accent_color: String,
-    /// "dark", "oled", "glass", "light".
+    /// "auto" (follows Windows), "dark", "oled", "glass", "light".
     pub theme: String,
     /// Animated background with 2-3 colours taken from the album cover.
     pub cover_gradient: bool,
@@ -64,7 +64,7 @@ impl Default for Settings {
             modes: ALL_MODES.iter().map(|m| m.to_string()).collect(),
             accent_mode: "cover".into(),
             accent_color: "#ff8a5c".into(),
-            theme: "dark".into(),
+            theme: "auto".into(),
             cover_gradient: true,
             bass_glow: true,
             vinyl: false,
@@ -111,8 +111,8 @@ impl Settings {
             self.position = 0.5;
         }
         self.position = self.position.clamp(0.0, 1.0);
-        if !["dark", "oled", "glass", "light"].contains(&self.theme.as_str()) {
-            self.theme = "dark".into();
+        if !["auto", "dark", "oled", "glass", "light"].contains(&self.theme.as_str()) {
+            self.theme = "auto".into();
         }
         if self.visualizer != "ring" {
             self.visualizer = "bars".into();

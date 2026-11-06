@@ -151,7 +151,7 @@ async function init() {
       save();
     });
   };
-  choice('theme', () => s.theme || 'dark', (v) => (s.theme = v));
+  choice('theme', () => s.theme || 'auto', (v) => (s.theme = v));
   choice('visualizer', () => s.visualizer || 'bars', (v) => (s.visualizer = v));
   choice('vinyl', () => (s.vinyl ? 'vinyl' : 'square'), (v) => (s.vinyl = v === 'vinyl'));
   bind('pause-on-calls', 'pauseOnCalls');

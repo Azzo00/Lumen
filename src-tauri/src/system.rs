@@ -32,9 +32,31 @@ pub struct SystemState {
     wifi_bars: u8,
     bt_on: Option<bool>,
     bt_devices: Vec<String>,
+    /// Windows apps use the light theme (Settings > Personalization > Colors).
+    light_theme: bool,
 }
 
 static LATEST: Mutex<Option<SystemState>> = Mutex::new(None);
+
+/// HKCU\...\Themes\Personalize\AppsUseLightTheme (missing = dark).
+fn apps_use_light_theme() -> bool {
+    use windows::core::w;
+    use windows::Win32::System::Registry::{RegGetValueW, HKEY_CURRENT_USER, RRF_RT_REG_DWORD};
+    let mut value: u32 = 0;
+    let mut size = std::mem::size_of::<u32>() as u32;
+    let res = unsafe {
+        RegGetValueW(
+            HKEY_CURRENT_USER,
+            w!("Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize"),
+            w!("AppsUseLightTheme"),
+            RRF_RT_REG_DWORD,
+            None,
+            Some(&mut value as *mut u32 as *mut _),
+            Some(&mut size),
+        )
+    };
+    res.is_ok() && value == 1
+}
 static BRIGHTNESS: Mutex<Option<u32>> = Mutex::new(None);
 static BRIGHTNESS_TX: OnceLock<Sender<u32>> = OnceLock::new();
 
@@ -75,6 +97,7 @@ pub fn start(app: AppHandle) {
                 last_slow = Instant::now();
                 read_radios(&mut state);
                 read_wifi(&mut state);
+                state.light_theme = apps_use_light_theme();
                 state.bt_devices = if state.bt_on == Some(true) { read_bt_devices() } else { Vec::new() };
             }
             if last_sent.as_ref() != Some(&state) {
