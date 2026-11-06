@@ -28,6 +28,8 @@ pub struct Settings {
     /// Keep the notch (and its popups) out of screen sharing and screenshots:
     /// still visible on the PC, invisible to whoever watches a Teams/Slack share.
     pub hide_in_share: bool,
+    /// Pause the music while a Teams/Slack call is using the microphone.
+    pub pause_on_calls: bool,
     pub notifications: bool,
     /// Show the text of notifications, or only the app name.
     pub notification_preview: bool,
@@ -57,6 +59,7 @@ impl Default for Settings {
             position: 0.5,
             hide_fullscreen: true,
             hide_in_share: true,
+            pause_on_calls: true,
             notifications: true,
             notification_preview: true,
             device_popups: true,

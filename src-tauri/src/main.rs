@@ -2,6 +2,7 @@
 
 mod agenda;
 mod audio;
+mod calls;
 mod devices;
 mod downloads;
 mod fullscreen;
@@ -100,6 +101,7 @@ fn main() {
                 .build(app)?;
 
             media::start(handle.clone());
+            calls::start(handle.clone());
             audio::start(handle.clone());
             system::start(handle.clone());
             devices::start(handle.clone());

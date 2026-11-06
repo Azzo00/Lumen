@@ -43,13 +43,13 @@ pub fn media_snapshot() -> Option<MediaInfo> {
     LATEST.lock().ok().and_then(|l| l.clone())
 }
 
-fn com_init() {
+pub(crate) fn com_init() {
     unsafe {
         let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
     }
 }
 
-fn request_manager() -> windows::core::Result<SessionManager> {
+pub(crate) fn request_manager() -> windows::core::Result<SessionManager> {
     SessionManager::RequestAsync().and_then(|op| op.get())
 }
 

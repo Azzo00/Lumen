@@ -30,6 +30,7 @@ Altro:
 
 - **Schermo intero**: la notch si nasconde durante giochi, video e presentazioni a schermo intero sul suo monitor.
 - **Modalità presentazione**: quando condividi lo schermo (Teams, Slack, Zoom) chi guarda non vede la notch né le sue notifiche, mentre tu continui a vederle. Lumen esclude la propria finestra da ogni cattura dello schermo, quindi non serve riconoscere la condivisione; vale anche per gli screenshot. Si disattiva dalle impostazioni.
+- **Pausa durante le chiamate**: quando Teams o Slack iniziano a usare il microfono (chiamata, huddle o schermata di ingresso) la musica va in pausa; quando lo rilasciano riprende, ma solo se l'aveva fermata Lumen e se è ancora in pausa. Lumen non legge i titoli delle finestre: guarda quali app stanno registrando dal microfono. Si disattiva dalle impostazioni.
 - **Posizione**: la notch si trascina a destra o a sinistra lungo il bordo superiore tenendo premuto il tasto sinistro del mouse (non sui pulsanti); la posizione viene salvata. Si può regolare anche dalle impostazioni ("Posizione", con il pulsante "Centra").
 - **Calendario di Outlook** (Impostazioni → Calendario di Outlook → Origine):
   - **Outlook classico (predefinito)**: il nuovo Outlook non ha un'API, ma Outlook classico usa lo stesso account. Ogni 10 minuti Lumen esegue in modo nascosto `outlook-calendar.ps1` (COM): se Outlook non è aperto lo avvia invisibile, lo sincronizza per ~20 secondi, legge gli impegni (da 40 giorni fa a 2 mesi avanti, escluse riunioni annullate o rifiutate) e lo richiude; se è già aperto lo usa senza chiuderlo. Serve il profilo di Outlook classico configurato.
@@ -126,6 +127,7 @@ src-tauri/
   src/settings.rs        impostazioni (JSON in %APPDATA%\dev.lumen.notch), finestra impostazioni
   src/hover.rs           click-through (la finestra cattura il mouse solo sopra la pillola) e trascinamento
   src/fullscreen.rs      nasconde la notch con app a schermo intero
+  src/calls.rs           pausa della musica durante le chiamate Teams/Slack
   src/media.rs           sessione multimediale di Windows (titolo, copertina, timeline, comandi)
   src/audio.rs           cattura WASAPI loopback + FFT → evento `audio`
   src/system.rs          volume, luminosità (WMI), radio Wi-Fi/Bluetooth
