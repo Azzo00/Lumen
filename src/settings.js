@@ -141,6 +141,7 @@ async function init() {
     });
   };
   bind('hide-fullscreen', 'hideFullscreen');
+  bind('hide-in-share', 'hideInShare');
   bind('notifications', 'notifications');
   bind('notification-preview', 'notificationPreview');
   bind('device-popups', 'devicePopups');

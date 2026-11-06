@@ -29,6 +29,7 @@ Popup automatici (la notch si allarga per qualche secondo):
 Altro:
 
 - **Schermo intero**: la notch si nasconde durante giochi, video e presentazioni a schermo intero sul suo monitor.
+- **Modalità presentazione**: quando condividi lo schermo (Teams, Slack, Zoom) chi guarda non vede la notch né le sue notifiche, mentre tu continui a vederle. Lumen esclude la propria finestra da ogni cattura dello schermo, quindi non serve riconoscere la condivisione; vale anche per gli screenshot. Si disattiva dalle impostazioni.
 - **Posizione**: la notch si trascina a destra o a sinistra lungo il bordo superiore tenendo premuto il tasto sinistro del mouse (non sui pulsanti); la posizione viene salvata. Si può regolare anche dalle impostazioni ("Posizione", con il pulsante "Centra").
 - **Calendario di Outlook** (Impostazioni → Calendario di Outlook → Origine):
   - **Outlook classico (predefinito)**: il nuovo Outlook non ha un'API, ma Outlook classico usa lo stesso account. Ogni 10 minuti Lumen esegue in modo nascosto `outlook-calendar.ps1` (COM): se Outlook non è aperto lo avvia invisibile, lo sincronizza per ~20 secondi, legge gli impegni (da 40 giorni fa a 2 mesi avanti, escluse riunioni annullate o rifiutate) e lo richiude; se è già aperto lo usa senza chiuderlo. Serve il profilo di Outlook classico configurato.

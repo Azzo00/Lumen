@@ -74,6 +74,7 @@ fn main() {
             let win = app.get_webview_window("main").expect("main window missing");
             place_window(&handle);
             hover::make_non_activating(&win);
+            apply_share_privacy(&handle);
             win.set_ignore_cursor_events(true)?;
             win.show()?;
 
@@ -131,6 +132,21 @@ pub fn x_range(win: &tauri::WebviewWindow) -> Option<(i32, i32, i32)> {
     let min = monitor.position().x;
     let free = (monitor.size().width as i32 - size.width as i32).max(0);
     Some((min, min + free, monitor.position().y))
+}
+
+/// "Modalità presentazione": when enabled the notch window is excluded from every
+/// screen capture (Teams, Slack, Zoom, OBS, screenshots). It stays visible on the PC,
+/// but whoever watches a shared screen never sees it nor its notifications.
+pub fn apply_share_privacy(app: &AppHandle) {
+    use windows::Win32::Foundation::HWND;
+    use windows::Win32::UI::WindowsAndMessaging::{SetWindowDisplayAffinity, WDA_EXCLUDEFROMCAPTURE, WDA_NONE};
+
+    let Some(win) = app.get_webview_window("main") else { return };
+    let Ok(h) = win.hwnd() else { return };
+    let affinity = if settings::get().hide_in_share { WDA_EXCLUDEFROMCAPTURE } else { WDA_NONE };
+    if let Err(e) = unsafe { SetWindowDisplayAffinity(HWND(h.0 as _), affinity) } {
+        eprintln!("SetWindowDisplayAffinity: {e}");
+    }
 }
 
 /// Place the (transparent) notch window at the top of the chosen monitor, at the saved position.

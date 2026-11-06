@@ -25,6 +25,9 @@ pub struct Settings {
     /// Horizontal position along the top edge: 0 = left, 0.5 = centre, 1 = right.
     pub position: f64,
     pub hide_fullscreen: bool,
+    /// Keep the notch (and its popups) out of screen sharing and screenshots:
+    /// still visible on the PC, invisible to whoever watches a Teams/Slack share.
+    pub hide_in_share: bool,
     pub notifications: bool,
     /// Show the text of notifications, or only the app name.
     pub notification_preview: bool,
@@ -53,6 +56,7 @@ impl Default for Settings {
             monitor: String::new(),
             position: 0.5,
             hide_fullscreen: true,
+            hide_in_share: true,
             notifications: true,
             notification_preview: true,
             device_popups: true,
@@ -150,6 +154,7 @@ pub fn store(app: &AppHandle, settings: Settings) -> Result<Settings, String> {
     }
     let _ = app.emit("settings-changed", &settings);
     crate::place_window(app);
+    crate::apply_share_privacy(app);
     Ok(settings)
 }
 
