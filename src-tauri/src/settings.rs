@@ -18,8 +18,13 @@ pub struct Settings {
     /// "cover" = colour taken from the album art, "fixed" = `accent_color`.
     pub accent_mode: String,
     pub accent_color: String,
-    /// "auto" (follows Windows), "dark", "oled", "glass", "light".
+    /// "auto" (follows Windows), "dark", "oled", "glass", "light", "custom".
     pub theme: String,
+    /// Colour and opacity (0.3 – 1) of the pill with the "custom" theme.
+    pub custom_color: String,
+    pub custom_opacity: f64,
+    /// Blurred album cover as the background of the music view.
+    pub cover_blur: bool,
     /// Animated background with 2-3 colours taken from the album cover.
     pub cover_gradient: bool,
     /// Coloured light under the notch that pulses with the bass.
@@ -67,6 +72,9 @@ impl Default for Settings {
             accent_mode: "cover".into(),
             accent_color: "#ff8a5c".into(),
             theme: "auto".into(),
+            custom_color: "#1e2a3a".into(),
+            custom_opacity: 0.9,
+            cover_blur: true,
             cover_gradient: true,
             bass_glow: true,
             vinyl: false,
@@ -118,8 +126,16 @@ impl Settings {
             self.position = 0.5;
         }
         self.position = self.position.clamp(0.0, 1.0);
-        if !["auto", "dark", "oled", "glass", "light"].contains(&self.theme.as_str()) {
+        if !["auto", "dark", "oled", "glass", "light", "custom"].contains(&self.theme.as_str()) {
             self.theme = "auto".into();
+        }
+        if !self.custom_opacity.is_finite() {
+            self.custom_opacity = 0.9;
+        }
+        self.custom_opacity = self.custom_opacity.clamp(0.3, 1.0);
+        let hex = self.custom_color.trim_start_matches('#');
+        if hex.len() != 6 || !hex.chars().all(|c| c.is_ascii_hexdigit()) {
+            self.custom_color = "#1e2a3a".into();
         }
         if self.visualizer != "ring" {
             self.visualizer = "bars".into();

@@ -1453,3 +1453,69 @@ html[data-theme="light"] .wx-flake { fill: #8db2e2; }
 @keyframes art-in {
   from { transform: translateX(100%) scale(0.85); opacity: 0; }
 }
+
+/* ---------- blurred cover behind the music view ---------- */
+.cover-bg {
+  position: absolute;
+  inset: -40px;
+  pointer-events: none;
+  background-size: cover;
+  background-position: center;
+  filter: blur(26px) saturate(1.5) brightness(0.5);
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+html[data-cover-blur] #pill.has-art[data-view="music"] .cover-bg {
+  opacity: 1;
+}
+html[data-cover-blur] #pill.has-art[data-view="music"] .tint {
+  opacity: 0;
+}
+html[data-theme="light"] .cover-bg {
+  filter: blur(26px) saturate(1.4) brightness(1.25);
+}
+html[data-theme="light"][data-cover-blur] #pill.has-art[data-view="music"] .cover-bg {
+  opacity: 0.55;
+}
+
+/* ---------- Wi-Fi: arcs show the signal, they pulse while searching ---------- */
+.wifi-ico path {
+  transition: opacity 0.3s ease;
+}
+#t-wifi[data-arcs="0"] .wifi-ico path:nth-child(n + 2),
+#t-wifi[data-arcs="1"] .wifi-ico path:nth-child(n + 3),
+#t-wifi[data-arcs="2"] .wifi-ico path:nth-child(4) {
+  opacity: 0.3;
+}
+#t-wifi.searching .wifi-ico path {
+  animation: wifi-wave 1.5s ease-in-out infinite;
+}
+#t-wifi.searching .wifi-ico path:nth-child(2) { animation-delay: 0.15s; }
+#t-wifi.searching .wifi-ico path:nth-child(3) { animation-delay: 0.3s; }
+#t-wifi.searching .wifi-ico path:nth-child(4) { animation-delay: 0.45s; }
+@keyframes wifi-wave {
+  0%, 100% { opacity: 0.25; }
+  40% { opacity: 1; }
+}
+
+/* ---------- battery: fills up again and again while charging ---------- */
+.battery.charging .batt-fill {
+  animation: batt-charge 2.4s ease-in-out infinite;
+  background-image: linear-gradient(90deg, transparent 40%, rgba(255, 255, 255, 0.55) 50%, transparent 60%);
+  background-size: 300% 100%;
+}
+@keyframes batt-charge {
+  0% { width: max(10%, calc(var(--lvl, 100%) - 35%)); background-position: 100% 0; }
+  70%, 100% { width: var(--lvl, 100%); background-position: 0 0; }
+}
+.battery.charging .batt-pct svg {
+  animation: bolt 2.4s ease-in-out infinite;
+}
+@keyframes bolt {
+  50% { opacity: 0.45; }
+}
+
+/* ---------- clock + day + temperature in the collapsed notch ---------- */
+#pill:not(.playing):not(.meeting) #mini-text {
+  max-width: 172px;
+}

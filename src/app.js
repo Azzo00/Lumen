@@ -321,9 +321,24 @@ function refitMarquees() {
 const lightQuery = matchMedia('(prefers-color-scheme: light)');
 function applyTheme() {
   const t = settings?.theme || 'auto';
+  const root = document.documentElement;
+  ['--bg', '--bg-hover', '--panel'].forEach((v) => root.style.removeProperty(v));
+  if (t === 'custom') {
+    // the chosen colour; text and details switch to dark on a light colour
+    const hex = settings.customColor || '#1e2a3a';
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+    const a = settings.customOpacity ?? 0.9;
+    const mix = (k) => [r, g, b].map((c) => Math.round(lum > 0.55 ? c * (1 - k) : c + (255 - c) * k)).join(', ');
+    root.dataset.theme = lum > 0.55 ? 'light' : 'dark';
+    root.style.setProperty('--bg', `rgba(${r}, ${g}, ${b}, ${a})`);
+    root.style.setProperty('--bg-hover', `rgba(${mix(0.08)}, ${Math.min(1, a + 0.05)})`);
+    root.style.setProperty('--panel', `rgba(${mix(0.04)}, 0.97)`);
+    return;
+  }
   // Windows' own setting (from the backend); the browser media query only as a fallback
   const light = sys ? sys.lightTheme : lightQuery.matches;
-  document.documentElement.dataset.theme = t === 'auto' ? (light ? 'light' : 'dark') : t;
+  root.dataset.theme = t === 'auto' ? (light ? 'light' : 'dark') : t;
 }
 
 function setArt(el) {
@@ -380,6 +395,13 @@ function updateMusic() {
   $('btn-toggle').innerHTML = playing ? ICON.pause : ICON.play;
   pill.classList.toggle('playing', playing);
   pill.classList.toggle('tinted', !!(settings?.coverGradient && playing && media.art));
+  const hasArt = !!(media.active && media.art);
+  pill.classList.toggle('has-art', hasArt);
+  const bg = $('cover-bg');
+  if (hasArt && bg.dataset.art !== media.art) {
+    bg.dataset.art = media.art;
+    bg.style.backgroundImage = `url("${media.art}")`;
+  }
   updateProgress();
   updateMini();
 }
@@ -589,7 +611,10 @@ function renderControls() {
   const wifi = $('t-wifi');
   wifi.classList.toggle('unavailable', sys.wifiOn === null);
   wifi.classList.toggle('on', !!sys.wifiOn);
-  $('t-wifi-sub').textContent = !sys.wifiOn ? 'Spento' : sys.wifiSsid || 'Non connesso';
+  $('t-wifi-sub').textContent = !sys.wifiOn ? 'Spento' : sys.wifiSsid || 'Ricerca reti…';
+  // Wi-Fi on but no network yet: the waves pulse; connected: arcs show the signal (0-5 bars)
+  wifi.classList.toggle('searching', !!sys.wifiOn && !sys.wifiSsid);
+  wifi.dataset.arcs = sys.wifiOn && sys.wifiSsid ? String(Math.ceil(((sys.wifiBars || 0) * 3) / 5)) : '3';
 
   const bt = $('t-bt');
   bt.classList.toggle('unavailable', sys.btOn === null);
@@ -829,6 +854,7 @@ function showOsd(kind) {
    Status
    ===================================================================== */
 const fmtTime = new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit' });
+const fmtWeekDay = new Intl.DateTimeFormat('it-IT', { weekday: 'short', day: 'numeric' });
 const fmtDate = new Intl.DateTimeFormat('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
 
 let lastDay = new Date().getDate();
@@ -853,6 +879,7 @@ async function initBattery() {
     const pct = Math.round(batt.level * 100);
     $('s-batt-pct').textContent = `${pct}%`;
     $('s-batt-fill').style.width = `${pct}%`;
+    $('s-batt-fill').style.setProperty('--lvl', `${pct}%`);
     $('s-battery').classList.toggle('charging', batt.charging);
     $('s-battery').classList.toggle('low', pct <= 20 && !batt.charging);
     $('s-battery').title = batt.charging ? 'In carica' : 'Batteria';
@@ -1064,7 +1091,11 @@ function updateMini() {
       setText(text, media.title || 'In riproduzione');
       sub.textContent = media.artist || prettyApp(media.app);
     } else {
-      setText(text, fmtTime.format(new Date()));
+      // nothing playing: clock, day and temperature (scrolls if it does not fit)
+      const now = new Date();
+      const parts = [fmtTime.format(now), fmtWeekDay.format(now)];
+      if (weatherNow) parts.push(`${weatherNow.temp}°`);
+      setText(text, parts.join('  ·  '));
     }
   }
   pill.classList.toggle('urgent', showMeeting && isUrgent(m));
@@ -1093,6 +1124,8 @@ function applySettings(next) {
   html.dataset.viz = settings.visualizer || 'bars';
   if (settings.vinyl) html.dataset.vinyl = '';
   else delete html.dataset.vinyl;
+  if (settings.coverBlur) html.dataset.coverBlur = '';
+  else delete html.dataset.coverBlur;
   applyAccentFromArt(media.art);
   updateMusic();
   loadWeather();
@@ -1209,6 +1242,7 @@ const wxSvg = (kind) => `<svg viewBox="0 0 48 48" aria-hidden="true">${WX_ICON[k
 const WEATHER_EVERY = 15 * 60 * 1000; // normal refresh
 const WEATHER_RETRY = 60 * 1000;      // retry after a failed request
 let weatherTimer = null;
+let weatherNow = null;  // { temp } for the collapsed clock
 let weatherAt = 0;      // time of the last successful update (0 = none yet)
 let weatherKey = '';    // city the shown data belongs to
 let weatherBusy = false;
@@ -1238,6 +1272,8 @@ async function fetchWeather() {
     if (kind) $('w-icon').innerHTML = wxSvg(kind);
     else $('w-icon').textContent = '🌡️';
     $('w-temp').textContent = `${Math.round(data.current.temperature_2m)}°`;
+    weatherNow = { temp: Math.round(data.current.temperature_2m) };
+    updateMini();
     $('w-desc').textContent =
       `${settings.weatherName} · ${label} · ${Math.round(data.daily.temperature_2m_min[0])}°/${Math.round(data.daily.temperature_2m_max[0])}°`;
     weatherAt = Date.now();
@@ -1262,6 +1298,7 @@ function loadWeather() {
     clearTimeout(weatherTimer);
     weatherAt = 0;
     weatherKey = '';
+    weatherNow = null;
     $('w-icon').textContent = '📍';
     $('w-temp').textContent = 'Meteo';
     $('w-desc').textContent = 'Scegli la città nelle impostazioni';

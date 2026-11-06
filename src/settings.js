@@ -161,7 +161,25 @@ async function init() {
       save();
     });
   };
-  choice('theme', () => s.theme || 'auto', (v) => (s.theme = v));
+  choice('theme', () => s.theme || 'auto', (v) => {
+    s.theme = v;
+    $('custom-row').classList.toggle('hidden', v !== 'custom');
+  });
+  $('custom-row').classList.toggle('hidden', s.theme !== 'custom');
+  $('custom-color').value = s.customColor || '#1e2a3a';
+  $('custom-color').addEventListener('input', (e) => {
+    s.customColor = e.target.value;
+    save();
+  });
+  const op = $('custom-opacity');
+  op.value = Math.round((s.customOpacity ?? 0.9) * 100);
+  $('custom-opacity-val').textContent = `${op.value}%`;
+  op.addEventListener('input', () => {
+    s.customOpacity = Number(op.value) / 100;
+    $('custom-opacity-val').textContent = `${op.value}%`;
+    save();
+  });
+  bind('cover-blur', 'coverBlur');
   choice('visualizer', () => s.visualizer || 'bars', (v) => (s.visualizer = v));
   choice('vinyl', () => (s.vinyl ? 'vinyl' : 'square'), (v) => (s.vinyl = v === 'vinyl'));
   bind('pause-on-calls', 'pauseOnCalls');

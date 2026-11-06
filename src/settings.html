@@ -39,7 +39,14 @@
         <option value="oled">Nero OLED</option>
         <option value="glass">Vetro</option>
         <option value="light">Chiaro</option>
+        <option value="custom">Personalizzato</option>
       </select>
+    </div>
+    <div class="row" id="custom-row">
+      <label for="custom-color">Colore notch</label>
+      <input type="color" id="custom-color" />
+      <input type="range" id="custom-opacity" min="30" max="100" step="5" title="Opacità" />
+      <span class="val" id="custom-opacity-val"></span>
     </div>
     <div class="row">
       <label for="vinyl">Copertina</label>
@@ -55,6 +62,7 @@
         <option value="ring">Onda attorno alla copertina</option>
       </select>
     </div>
+    <label class="check"><input type="checkbox" id="cover-blur" /> Copertina sfocata come sfondo della vista musica</label>
     <label class="check"><input type="checkbox" id="cover-gradient" /> Sfondo sfumato con i colori della copertina</label>
     <label class="check"><input type="checkbox" id="bass-glow" /> Bagliore sotto la notch a ritmo dei bassi</label>
     <div class="row">
