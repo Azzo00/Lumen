@@ -35,7 +35,7 @@ button {
 
 #pill {
   position: absolute;
-  top: 6px;
+  top: var(--pill-top, 6px);
   left: 50%;
   transform: translateX(-50%) scale(var(--scale, 1));
   transform-origin: top center;
@@ -1518,4 +1518,46 @@ html[data-theme="light"][data-cover-blur] #pill.has-art[data-view="music"] .cove
 /* ---------- clock + day + temperature in the collapsed notch ---------- */
 #pill:not(.playing):not(.meeting) #mini-text {
   max-width: 172px;
+}
+
+/* ---------- docked notch: flush with the top edge, concave "ears" at its sides ---------- */
+html[data-docked] {
+  --pill-top: 0px;
+}
+.ear {
+  position: absolute;
+  top: 0;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+  display: none;
+}
+html[data-docked] .ear {
+  display: block;
+}
+/* a square of the notch colour with a quarter circle cut out: the curve that joins the
+   screen edge to the side of the notch */
+#ear-l {
+  background: radial-gradient(circle at 0 100%, transparent calc(var(--ear) - 0.6px), var(--bg) var(--ear));
+}
+#ear-r {
+  background: radial-gradient(circle at 100% 100%, transparent calc(var(--ear) - 0.6px), var(--bg) var(--ear));
+}
+html[data-docked] #pill {
+  box-shadow: 0 10px 30px var(--pill-shadow);
+}
+/* docked: the top of the notch fades to its plain colour, so coloured backgrounds
+   (cover, gradient) meet the "ears" without a seam */
+.top-fade {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 16px;
+  pointer-events: none;
+  background: linear-gradient(var(--bg), transparent);
+}
+html[data-docked] .top-fade {
+  display: block;
 }

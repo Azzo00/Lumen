@@ -66,6 +66,13 @@
     <label class="check"><input type="checkbox" id="cover-gradient" /> Sfondo sfumato con i colori della copertina</label>
     <label class="check"><input type="checkbox" id="bass-glow" /> Bagliore sotto la notch a ritmo dei bassi</label>
     <div class="row">
+      <label for="docked">Stile</label>
+      <select id="docked">
+        <option value="docked">Attaccata al bordo (come una notch)</option>
+        <option value="floating">Pillola sospesa</option>
+      </select>
+    </div>
+    <div class="row">
       <label for="roundness">Angoli</label>
       <input type="range" id="roundness" min="0" max="100" step="5" />
       <span class="val" id="roundness-val"></span>

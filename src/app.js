@@ -22,7 +22,8 @@ const SIZE = {
   shelf: [470, 186, 30],
   meeting: [250, 40, 20],
 };
-const PILL_TOP = 6;
+// distance of the pill from the top edge: 0 when docked (attached to the edge)
+const pillTop = () => (settings?.docked === false ? 6 : 0);
 const ICON = {
   play: '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',
   pause: '<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>',
@@ -66,7 +67,19 @@ function frame(now) {
   if (!moving) for (const s of Object.values(shape)) (s.v = s.t), (s.vel = 0);
   pill.style.width = `${shape.w.v}px`;
   pill.style.height = `${shape.h.v}px`;
-  pill.style.borderRadius = `${shape.r.v}px`;
+  const docked = settings?.docked !== false;
+  // docked: square top (it comes out of the screen edge), rounded bottom
+  pill.style.borderRadius = docked ? `0 0 ${shape.r.v}px ${shape.r.v}px` : `${shape.r.v}px`;
+  if (docked) {
+    const scl = settings?.scale ?? 1;
+    const half = (shape.w.v * scl) / 2;
+    const ear = Math.round(Math.min(12, 7 + shape.h.v * 0.025) * scl);
+    for (const [el, side] of [[earL, -1], [earR, 1]]) {
+      el.style.width = el.style.height = `${ear}px`;
+      el.style.setProperty('--ear', `${ear}px`);
+      el.style.left = `calc(50% ${side < 0 ? '-' : '+'} ${side < 0 ? half + ear : half}px)`;
+    }
+  }
 
   // big view: 12 bands; mini: 5 bands sampled across the spectrum
   bigBars.forEach((_, i) => (barSprings[i].t = levels[i]));
@@ -84,7 +97,7 @@ function frame(now) {
   halo.style.opacity = (glowOn ? Math.min(1, 0.25 + Math.max(0, bass.v) * 2.4) : Math.max(0, bass.v) * 2).toFixed(3);
   if (glowOn || bass.v > 0.01) {
     halo.style.width = `${shape.w.v * sc * 0.75}px`;
-    halo.style.top = `${PILL_TOP + shape.h.v * sc - 12}px`;
+    halo.style.top = `${pillTop() + shape.h.v * sc - 12}px`;
   }
 
   if (settings?.visualizer === 'ring' && pill.dataset.view === 'music') drawRing();
@@ -92,6 +105,8 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 const halo = $('halo');
+const earL = $('ear-l');
+const earR = $('ear-r');
 const bass = spring(0, 300, 24);
 
 /* Circular visualizer: a closed wave around the cover, mirrored left/right. */
@@ -196,7 +211,7 @@ function render() {
       x: (window.innerWidth - w * scale) / 2,
       y: 0,
       w: w * scale,
-      h: h * scale + PILL_TOP + (expanded ? 0 : 4),
+      h: h * scale + pillTop() + (expanded ? 0 : 4),
     },
   });
   onViewChanged();
@@ -1124,6 +1139,8 @@ function applySettings(next) {
   html.dataset.viz = settings.visualizer || 'bars';
   if (settings.vinyl) html.dataset.vinyl = '';
   else delete html.dataset.vinyl;
+  if (settings.docked !== false) html.dataset.docked = '';
+  else delete html.dataset.docked;
   if (settings.coverBlur) html.dataset.coverBlur = '';
   else delete html.dataset.coverBlur;
   applyAccentFromArt(media.art);

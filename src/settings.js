@@ -180,6 +180,7 @@ async function init() {
     save();
   });
   bind('cover-blur', 'coverBlur');
+  choice('docked', () => (s.docked === false ? 'floating' : 'docked'), (v) => (s.docked = v === 'docked'));
   choice('visualizer', () => s.visualizer || 'bars', (v) => (s.visualizer = v));
   choice('vinyl', () => (s.vinyl ? 'vinyl' : 'square'), (v) => (s.vinyl = v === 'vinyl'));
   bind('pause-on-calls', 'pauseOnCalls');

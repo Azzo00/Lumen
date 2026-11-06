@@ -31,6 +31,9 @@ pub struct Settings {
     pub bass_glow: bool,
     /// Round cover spinning like a record while the music plays.
     pub vinyl: bool,
+    /// Notch attached to the top edge of the screen (square top, concave "ears")
+    /// instead of a pill floating a few pixels below it.
+    pub docked: bool,
     /// "bars" or "ring" (wave around the cover).
     pub visualizer: String,
     /// Size multiplier of the pill (0.85 – 1.25).
@@ -78,6 +81,7 @@ impl Default for Settings {
             cover_gradient: true,
             bass_glow: true,
             vinyl: false,
+            docked: true,
             visualizer: "bars".into(),
             scale: 1.0,
             roundness: 0.5,
