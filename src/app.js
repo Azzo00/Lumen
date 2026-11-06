@@ -76,7 +76,63 @@ function frame(now) {
   bigBars.forEach((el, i) => (el.style.height = `${3 + Math.max(0, barSprings[i].v) * 41}px`));
   miniBars.forEach((el, i) => (el.style.height = `${3 + Math.max(0, barSprings[bigBars.length + i].v) * 15}px`));
 
+  // light under the notch, following the bass
+  const glowOn = settings?.bassGlow && pill.classList.contains('playing');
+  bass.t = glowOn ? (levels[0] + levels[1] + levels[2]) / 3 : 0;
+  stepSpring(bass, dt);
+  const sc = settings?.scale ?? 1;
+  halo.style.opacity = (glowOn ? Math.min(1, 0.25 + Math.max(0, bass.v) * 2.4) : Math.max(0, bass.v) * 2).toFixed(3);
+  if (glowOn || bass.v > 0.01) {
+    halo.style.width = `${shape.w.v * sc * 0.75}px`;
+    halo.style.top = `${PILL_TOP + shape.h.v * sc - 12}px`;
+  }
+
+  if (settings?.visualizer === 'ring' && pill.dataset.view === 'music') drawRing();
+
   requestAnimationFrame(frame);
+}
+const halo = $('halo');
+const bass = spring(0, 300, 24);
+
+/* Circular visualizer: a closed wave around the cover, mirrored left/right. */
+const ringCanvas = $('ring');
+const ringCtx = ringCanvas.getContext('2d');
+let ringColor = '#ff8a5c';
+let ringColorAt = 0;
+function drawRing() {
+  const now = performance.now();
+  if (now - ringColorAt > 500) {
+    ringColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || ringColor;
+    ringColorAt = now;
+  }
+  const size = ringCanvas.width;
+  const c = size / 2;
+  const unit = size / 84; // canvas px per CSS px
+  const base = 34.5 * unit;
+  const N = 96;
+  const band = (p) => {
+    const x = p * (bigBars.length - 1);
+    const i = Math.floor(x);
+    const a = Math.max(0, barSprings[i].v);
+    const b = Math.max(0, barSprings[Math.min(i + 1, bigBars.length - 1)].v);
+    return a + (b - a) * (x - i);
+  };
+  ringCtx.clearRect(0, 0, size, size);
+  ringCtx.beginPath();
+  for (let k = 0; k <= N; k++) {
+    const t = k / N;
+    const p = t < 0.5 ? t * 2 : (1 - t) * 2; // mirrored: bass at the top, treble at the bottom
+    const r = base + (1 + band(p) * 7.5) * unit;
+    const ang = -Math.PI / 2 + t * Math.PI * 2;
+    const x = c + Math.cos(ang) * r;
+    const y = c + Math.sin(ang) * r;
+    k ? ringCtx.lineTo(x, y) : ringCtx.moveTo(x, y);
+  }
+  ringCtx.moveTo(c + base, c);
+  ringCtx.arc(c, c, base, 0, Math.PI * 2, true);
+  ringCtx.fillStyle = ringColor;
+  ringCtx.globalAlpha = 0.9;
+  ringCtx.fill('evenodd');
 }
 requestAnimationFrame(frame);
 
@@ -117,6 +173,15 @@ function render() {
   pill.classList.toggle('expanded', expanded);
   renderDots();
   const [w, h, r] = currentSize();
+  // "Liquid" open/close: opening stretches sideways first and then drops down,
+  // closing lifts first and then narrows, both with a soft elastic overshoot.
+  if (h !== shape.h.t) {
+    const opening = h > shape.h.t;
+    const [fast, slow] = [[430, 21], [230, 17]];
+    [shape.w.k, shape.w.c] = opening ? fast : slow;
+    [shape.h.k, shape.h.c] = opening ? slow : fast;
+    [shape.r.k, shape.r.c] = [shape.h.k, shape.h.c];
+  }
   shape.w.t = w;
   shape.h.t = h;
   shape.r.t = r;
@@ -228,6 +293,7 @@ function updateMusic() {
   setArt($('mini-art'));
   $('btn-toggle').innerHTML = playing ? ICON.pause : ICON.play;
   pill.classList.toggle('playing', playing);
+  pill.classList.toggle('tinted', !!(settings?.coverGradient && playing && media.art));
   updateProgress();
   updateMini();
 }
@@ -305,7 +371,7 @@ function onMedia(payload) {
   const key = media.active ? `${media.app}|${media.title}|${media.artist}` : '';
   if (key && key !== lastTrackKey && media.playing && lastTrackKey !== '') peekNewTrack();
   if (key) lastTrackKey = key;
-  if (media.art !== prevArt && settings?.accentMode !== 'fixed') applyAccentFromArt(media.art);
+  if (media.art !== prevArt) applyAccentFromArt(media.art);
   updateMusic();
 }
 listen('media', ({ payload }) => onMedia(payload));
@@ -335,9 +401,12 @@ const DEFAULT_ACCENT = ['#ff8a5c', '#ffc46b'];
 
 function applyAccentFromArt(src) {
   const root = document.documentElement.style;
+  const fixed = settings?.accentMode === 'fixed';
   if (!src) {
-    root.setProperty('--accent', DEFAULT_ACCENT[0]);
-    root.setProperty('--accent-2', DEFAULT_ACCENT[1]);
+    if (!fixed) {
+      root.setProperty('--accent', DEFAULT_ACCENT[0]);
+      root.setProperty('--accent-2', DEFAULT_ACCENT[1]);
+    }
     return;
   }
   const img = new Image();
@@ -349,6 +418,8 @@ function applyAccentFromArt(src) {
     const px = ctx.getImageData(0, 0, 32, 32).data;
     // Weight each pixel by saturation × brightness: picks the "vivid" colour, not the average grey.
     let r = 0, g = 0, b = 0, wsum = 0;
+    // 12 hue buckets for the background gradient: the 3 strongest colours of the cover
+    const buckets = Array.from({ length: 12 }, () => ({ r: 0, g: 0, b: 0, w: 0 }));
     for (let i = 0; i < px.length; i += 4) {
       const [pr, pg, pb] = [px[i], px[i + 1], px[i + 2]];
       const max = Math.max(pr, pg, pb);
@@ -359,13 +430,29 @@ function applyAccentFromArt(src) {
       g += pg * w;
       b += pb * w;
       wsum += w;
+      const bk = buckets[Math.floor(rgbToHsl(pr, pg, pb)[0] / 30) % 12];
+      bk.r += pr * w;
+      bk.g += pg * w;
+      bk.b += pb * w;
+      bk.w += w;
     }
     let [h, s, l] = rgbToHsl(r / wsum, g / wsum, b / wsum);
-    // keep it readable on the black pill
-    s = Math.max(s, 0.45);
-    l = Math.min(Math.max(l, 0.55), 0.7);
-    root.setProperty('--accent', `hsl(${h} ${s * 100}% ${l * 100}%)`);
-    root.setProperty('--accent-2', `hsl(${(h + 30) % 360} ${s * 100}% ${Math.min(l + 0.12, 0.85) * 100}%)`);
+    if (!fixed) {
+      // keep it readable on the pill (darker on the light theme)
+      const light = settings?.theme === 'light';
+      s = Math.max(s, 0.45);
+      l = light ? Math.min(Math.max(l, 0.36), 0.48) : Math.min(Math.max(l, 0.55), 0.7);
+      root.setProperty('--accent', `hsl(${h} ${s * 100}% ${l * 100}%)`);
+      root.setProperty('--accent-2', `hsl(${(h + 30) % 360} ${s * 100}% ${Math.min(l + 0.12, 0.85) * 100}%)`);
+    }
+    const top = buckets.filter((bk) => bk.w > wsum * 0.04).sort((x, y) => y.w - x.w).slice(0, 3);
+    const pal = top.map((bk) => {
+      const [ph, ps] = rgbToHsl(bk.r / bk.w, bk.g / bk.w, bk.b / bk.w);
+      return `hsl(${ph} ${Math.max(ps, 0.5) * 100}% 55%)`;
+    });
+    // covers with one or two colours: neighbouring shades of the main one
+    while (pal.length < 3) pal.push(`hsl(${(h + pal.length * 35) % 360} ${Math.max(s, 0.5) * 100}% 55%)`);
+    pal.forEach((col, i) => root.setProperty(`--g${i + 1}`, col));
   };
   img.src = src;
 }
@@ -910,9 +997,14 @@ function applySettings(next) {
   if (settings.accentMode === 'fixed') {
     document.documentElement.style.setProperty('--accent', settings.accentColor);
     document.documentElement.style.setProperty('--accent-2', settings.accentColor);
-  } else {
-    applyAccentFromArt(media.art);
   }
+  const html = document.documentElement;
+  html.dataset.theme = settings.theme || 'dark';
+  html.dataset.viz = settings.visualizer || 'bars';
+  if (settings.vinyl) html.dataset.vinyl = '';
+  else delete html.dataset.vinyl;
+  applyAccentFromArt(media.art);
+  updateMusic();
   loadWeather();
   render();
 }
@@ -985,16 +1077,45 @@ function onViewChanged() {
    Weather (Open-Meteo, no API key; the city is chosen in the settings)
    ===================================================================== */
 const WMO = [
-  [[0], '☀️', 'Sereno'],
-  [[1], '🌤️', 'Poco nuvoloso'],
-  [[2], '⛅', 'Parzialmente nuvoloso'],
-  [[3], '☁️', 'Coperto'],
-  [[45, 48], '🌫️', 'Nebbia'],
-  [[51, 53, 55, 56, 57], '🌦️', 'Pioviggine'],
-  [[61, 63, 65, 66, 67, 80, 81, 82], '🌧️', 'Pioggia'],
-  [[71, 73, 75, 77, 85, 86], '🌨️', 'Neve'],
-  [[95, 96, 99], '⛈️', 'Temporale'],
+  [[0], 'sun', 'Sereno'],
+  [[1], 'partly', 'Poco nuvoloso'],
+  [[2], 'partly', 'Parzialmente nuvoloso'],
+  [[3], 'cloud', 'Coperto'],
+  [[45, 48], 'fog', 'Nebbia'],
+  [[51, 53, 55, 56, 57], 'drizzle', 'Pioviggine'],
+  [[61, 63, 65, 66, 67, 80, 81, 82], 'rain', 'Pioggia'],
+  [[71, 73, 75, 77, 85, 86], 'snow', 'Neve'],
+  [[95, 96, 99], 'storm', 'Temporale'],
 ];
+
+/* Animated weather icons (SVG + CSS animations, see .wx-* in style.css). */
+function wxSun(cx, cy, r) {
+  const rays = Array.from({ length: 8 }, (_, i) => {
+    const a = (i * Math.PI) / 4;
+    const [x1, y1, x2, y2] = [r + 3.5, r + 3.5, r + 7, r + 7].map((d, j) =>
+      (j % 2 ? cy + Math.sin(a) * d : cx + Math.cos(a) * d).toFixed(1),
+    );
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+  }).join('');
+  return `<g class="wx-sun"><g class="wx-rays" style="transform-origin:${cx}px ${cy}px">${rays}</g><circle cx="${cx}" cy="${cy}" r="${r}"/></g>`;
+}
+const wxCloud = (dy = 0, dark = false) =>
+  `<path class="wx-cloud${dark ? ' dark' : ''}" d="M15 ${34 + dy}a7 7 0 0 1-.5-14 10 10 0 0 1 19-1 7.5 7.5 0 0 1 1 15z"/>`;
+const wxDrops = (xs, len = 4) =>
+  xs.map((x, i) => `<line class="wx-drop" x1="${x}" y1="31" x2="${x - 1}" y2="${31 + len}" style="animation-delay:${(-i * 0.37).toFixed(2)}s"/>`).join('');
+const WX_ICON = {
+  sun: wxSun(24, 24, 8),
+  partly: wxSun(31, 17, 6) + wxCloud(4),
+  cloud: wxCloud(),
+  fog: wxCloud(-6) + `<g class="wx-fog"><line x1="12" y1="34" x2="36" y2="34"/><line x1="16" y1="40" x2="40" y2="40" style="animation-delay:-1.4s"/></g>`,
+  drizzle: wxCloud(-6) + wxDrops([20, 29], 3),
+  rain: wxCloud(-6, true) + wxDrops([17, 24, 31]),
+  snow:
+    wxCloud(-6) +
+    [17, 24, 31].map((x, i) => `<circle class="wx-flake" cx="${x}" cy="33" r="2.2" style="animation-delay:${(-i * 0.8).toFixed(1)}s"/>`).join(''),
+  storm: wxCloud(-6, true) + `<path class="wx-bolt" d="M25 27l-6 9h5l-2 8 7-10h-5l3-7z"/>`,
+};
+const wxSvg = (kind) => `<svg viewBox="0 0 48 48" aria-hidden="true">${WX_ICON[kind]}</svg>`;
 const WEATHER_EVERY = 15 * 60 * 1000; // normal refresh
 const WEATHER_RETRY = 60 * 1000;      // retry after a failed request
 let weatherTimer = null;
@@ -1023,8 +1144,9 @@ async function fetchWeather() {
     const data = await res.json();
     if (key !== weatherKey) return; // city changed while waiting
     const code = data.current.weather_code;
-    const [, icon, label] = WMO.find(([codes]) => codes.includes(code)) || [[], '🌡️', ''];
-    $('w-icon').textContent = icon;
+    const [, kind, label] = WMO.find(([codes]) => codes.includes(code)) || [[], '', ''];
+    if (kind) $('w-icon').innerHTML = wxSvg(kind);
+    else $('w-icon').textContent = '🌡️';
     $('w-temp').textContent = `${Math.round(data.current.temperature_2m)}°`;
     $('w-desc').textContent =
       `${settings.weatherName} · ${label} · ${Math.round(data.daily.temperature_2m_min[0])}°/${Math.round(data.daily.temperature_2m_max[0])}°`;

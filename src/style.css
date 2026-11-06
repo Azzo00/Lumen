@@ -2,7 +2,13 @@
   --bg: #09090b;
   --fg: #f4f4f6;
   --dim: #8e8e98;
-  --line: rgba(255, 255, 255, 0.08);
+  --ink: 255, 255, 255;
+  --line: rgba(var(--ink), 0.08);
+  --panel: rgba(24, 24, 26, 0.97);
+  --bg-hover: #1c1c1e;
+  --cloud: #e4e8ef;
+  --cloud-dark: #a3abba;
+  --pill-shadow: rgba(0, 0, 0, 0.4);
   --accent: #ff8a5c;
   --accent-2: #ffc46b;
 }
@@ -38,7 +44,7 @@ button {
   border-radius: 17px;
   background: var(--bg);
   overflow: hidden;
-  box-shadow: 0 0 0 1px var(--line), 0 10px 30px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 1px var(--line), 0 10px 30px var(--pill-shadow);
 }
 
 /* ---------- views ---------- */
@@ -100,7 +106,7 @@ button {
   text-align: left;
   padding: 9px 8px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(var(--ink), 0.07);
   transition: background 0.2s, color 0.2s, transform 0.1s;
 }
 .tile:active {
@@ -161,7 +167,7 @@ button {
   color: var(--fg);
 }
 button.slider-ico:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(var(--ink), 0.1);
 }
 .slider-val {
   width: 32px;
@@ -183,7 +189,7 @@ input[type="range"] {
 input[type="range"]::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 3px;
-  background: linear-gradient(to right, var(--fg) var(--pct), rgba(255, 255, 255, 0.14) var(--pct));
+  background: linear-gradient(to right, var(--fg) var(--pct), rgba(var(--ink), 0.14) var(--pct));
 }
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -216,7 +222,7 @@ input[type="range"]::-webkit-slider-thumb {
   flex: 1;
   height: 5px;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(var(--ink), 0.14);
   overflow: hidden;
 }
 .osd-fill {
@@ -398,6 +404,7 @@ input[type="range"]::-webkit-slider-thumb {
   gap: 16px;
 }
 #art {
+  position: relative;
   width: 64px;
   height: 64px;
   border-radius: 14px;
@@ -420,7 +427,7 @@ input[type="range"]::-webkit-slider-thumb {
   flex: 1;
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(var(--ink), 0.12);
   cursor: pointer;
   transition: height 0.15s ease;
 }
@@ -486,7 +493,7 @@ input[type="range"]::-webkit-slider-thumb {
   transition: background 0.15s, transform 0.1s;
 }
 .controls button:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(var(--ink), 0.1);
 }
 .controls button:active {
   transform: scale(0.9);
@@ -544,7 +551,7 @@ input[type="range"]::-webkit-slider-thumb {
   height: 13px;
   padding: 2px;
   box-sizing: border-box;
-  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  border: 1.5px solid rgba(var(--ink), 0.55);
   border-radius: 4px;
 }
 .batt-icon::after {
@@ -555,7 +562,7 @@ input[type="range"]::-webkit-slider-thumb {
   width: 2px;
   height: 4px;
   border-radius: 0 1px 1px 0;
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(var(--ink), 0.55);
 }
 .batt-fill {
   height: 100%;
@@ -637,7 +644,7 @@ input[type="range"]::-webkit-slider-thumb {
   margin: 0 auto;
 }
 .cal-grid .day:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(var(--ink), 0.1);
 }
 .cal-grid .day.sel:not(.today) {
   box-shadow: inset 0 0 0 1.5px var(--accent);
@@ -684,14 +691,14 @@ input[type="range"]::-webkit-slider-thumb {
   min-height: 26px;
   padding: 3px 4px 3px 8px;
   border-radius: 9px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(var(--ink), 0.06);
   border-left: 2px solid var(--accent);
 }
 .agenda-item.past {
   opacity: 0.4;
 }
 .agenda-item.free {
-  border-left-color: rgba(255, 255, 255, 0.25);
+  border-left-color: rgba(var(--ink), 0.25);
 }
 .agenda-item.live {
   background: color-mix(in srgb, var(--accent) 18%, transparent);
@@ -751,7 +758,7 @@ input[type="range"]::-webkit-slider-thumb {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(var(--ink), 0.25);
   transition: background 0.2s, width 0.25s;
 }
 .dots b.on {
@@ -816,7 +823,7 @@ input[type="range"]::-webkit-slider-thumb {
   stroke-width: 6;
 }
 .ring-bg {
-  stroke: rgba(255, 255, 255, 0.1);
+  stroke: rgba(var(--ink), 0.1);
 }
 .ring-fg {
   stroke: var(--accent);
@@ -876,7 +883,7 @@ input[type="range"]::-webkit-slider-thumb {
 .pc-bar {
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(var(--ink), 0.12);
   overflow: hidden;
   margin-bottom: 2px;
 }
@@ -912,7 +919,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 .toast-icon.plain {
   background-image: none;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(var(--ink), 0.1);
   color: var(--fg);
 }
 .toast-icon .ico {
@@ -955,7 +962,7 @@ input[type="range"]::-webkit-slider-thumb {
   cursor: pointer;
 }
 #pill.toast-hover {
-  background: #1c1c1e;
+  background: var(--bg-hover);
 }
 .toast-side.chev {
   font-size: 20px;
@@ -987,7 +994,7 @@ input[type="range"]::-webkit-slider-thumb {
   margin-left: 6px;
   padding: 5px 11px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(var(--ink), 0.12);
   color: var(--fg);
   font-size: 11.5px;
   font-weight: 650;
@@ -1018,8 +1025,8 @@ input[type="range"]::-webkit-slider-thumb {
   bottom: 16px;
   padding: 8px 12px;
   border-radius: 14px;
-  background: rgba(24, 24, 26, 0.97);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+  background: var(--panel);
+  box-shadow: 0 0 0 1px rgba(var(--ink), 0.08);
   overflow-y: auto;
   font-size: 11.5px;
   line-height: 1.45;
@@ -1093,7 +1100,7 @@ input[type="range"]::-webkit-slider-thumb {
   font-weight: 650;
 }
 .sh-btn.ghost {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(var(--ink), 0.1);
   color: var(--fg);
 }
 .sh-btn:hover {
@@ -1114,7 +1121,7 @@ input[type="range"]::-webkit-slider-thumb {
   height: 104px;
   padding: 8px 6px 6px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(var(--ink), 0.07);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1123,7 +1130,7 @@ input[type="range"]::-webkit-slider-thumb {
   user-select: none;
 }
 .sh-item:hover {
-  background: rgba(255, 255, 255, 0.13);
+  background: rgba(var(--ink), 0.13);
 }
 .sh-ico {
   width: 40px;
@@ -1175,7 +1182,7 @@ input[type="range"]::-webkit-slider-thumb {
   font-size: 12px;
   line-height: 1.5;
   color: var(--dim);
-  border: 1.5px dashed rgba(255, 255, 255, 0.18);
+  border: 1.5px dashed rgba(var(--ink), 0.18);
   border-radius: 14px;
 }
 .sh-empty.hidden,
@@ -1239,3 +1246,170 @@ input[type="range"]::-webkit-slider-thumb {
 .sh-qr-meta {
   color: var(--accent);
 }
+
+
+/* =====================================================================
+   Themes
+   ===================================================================== */
+html[data-theme="oled"] {
+  --bg: #000;
+  --line: rgba(255, 255, 255, 0.06);
+  --panel: rgba(0, 0, 0, 0.97);
+  --bg-hover: #121214;
+}
+/* The window is bigger than the pill, so Windows cannot blur the desktop behind
+   the pill alone: glass is translucent, with a light sheen and a bright edge. */
+html[data-theme="glass"] {
+  --bg: rgba(24, 24, 30, 0.7);
+  --bg-hover: rgba(44, 44, 52, 0.82);
+  --line: rgba(255, 255, 255, 0.18);
+  --panel: rgba(30, 30, 36, 0.94);
+}
+html[data-theme="glass"] #pill {
+  backdrop-filter: blur(18px) saturate(1.4);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0) 45%);
+}
+html[data-theme="light"] {
+  --bg: #f4f4f7;
+  --fg: #16161a;
+  --dim: #686872;
+  --ink: 22, 22, 30;
+  --line: rgba(0, 0, 0, 0.1);
+  --panel: rgba(250, 250, 252, 0.98);
+  --bg-hover: #e5e5ea;
+  --cloud: #b4bccb;
+  --cloud-dark: #7d8798;
+  --pill-shadow: rgba(0, 0, 0, 0.16);
+}
+
+/* ---------- animated background from the cover colours ---------- */
+.tint {
+  position: absolute;
+  inset: -30%;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 25% 35%, var(--g1, transparent), transparent 45%),
+    radial-gradient(circle at 75% 25%, var(--g2, transparent), transparent 45%),
+    radial-gradient(circle at 55% 80%, var(--g3, transparent), transparent 50%);
+  transition: opacity 0.9s ease;
+  animation: tint-drift 16s ease-in-out infinite alternate;
+}
+#pill.tinted .tint {
+  opacity: 0.4;
+}
+html[data-theme="light"] #pill.tinted .tint {
+  opacity: 0.3;
+}
+@keyframes tint-drift {
+  0% { transform: translate(-8%, -5%) rotate(0deg); }
+  50% { transform: translate(6%, 4%) rotate(12deg); }
+  100% { transform: translate(-3%, 6%) rotate(-8deg); }
+}
+
+/* ---------- light under the notch, driven by the bass ---------- */
+#halo {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 160px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent);
+  filter: blur(12px);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+/* ---------- vinyl cover ---------- */
+html[data-vinyl] #art,
+html[data-viz="ring"] #art {
+  border-radius: 50%;
+}
+html[data-vinyl] #art,
+html[data-vinyl] #pill:not(.meeting) #mini-art {
+  position: relative;
+  border-radius: 50%;
+  animation: vinyl-spin 7s linear infinite;
+  animation-play-state: paused;
+}
+html[data-vinyl] #pill.playing #art,
+html[data-vinyl] #pill.playing:not(.meeting) #mini-art {
+  animation-play-state: running;
+}
+html[data-vinyl] #art::after,
+html[data-vinyl] #pill:not(.meeting) #mini-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, var(--bg) 0 8%, rgba(0, 0, 0, 0.45) 9% 13%, transparent 14%),
+    repeating-radial-gradient(circle, transparent 0 2.5px, rgba(0, 0, 0, 0.1) 2.5px 3.5px);
+}
+@keyframes vinyl-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- circular visualizer ---------- */
+.art-wrap {
+  position: relative;
+  flex: none;
+  width: 64px;
+  height: 64px;
+}
+#ring {
+  position: absolute;
+  left: -10px;
+  top: -10px;
+  width: 84px;
+  height: 84px;
+  pointer-events: none;
+  display: none;
+}
+html[data-viz="ring"] #ring {
+  display: block;
+}
+html[data-viz="ring"] #big-bars {
+  display: none;
+}
+
+/* ---------- animated weather icons ---------- */
+.weather-icon svg {
+  display: block;
+  width: 40px;
+  height: 40px;
+  overflow: visible;
+}
+.wx-sun circle { fill: #ffc94a; animation: wx-pulse 3s ease-in-out infinite; }
+.wx-sun line { stroke: #ffc94a; stroke-width: 2.4; stroke-linecap: round; }
+.wx-rays { animation: wx-spin 16s linear infinite; }
+.wx-cloud { fill: var(--cloud); animation: wx-drift 5s ease-in-out infinite alternate; }
+.wx-cloud.dark { fill: var(--cloud-dark); }
+.wx-drop { stroke: #63b0ff; stroke-width: 2.2; stroke-linecap: round; animation: wx-fall 1.1s linear infinite; }
+.wx-flake { fill: #dceaff; animation: wx-snow 2.6s linear infinite; }
+html[data-theme="light"] .wx-flake { fill: #8db2e2; }
+.wx-bolt { fill: #ffd23f; animation: wx-flash 3s ease-out infinite; }
+.wx-fog line { stroke: var(--cloud); stroke-width: 2.6; stroke-linecap: round; animation: wx-slide 3.2s ease-in-out infinite alternate; }
+@keyframes wx-spin { to { transform: rotate(360deg); } }
+@keyframes wx-pulse { 50% { opacity: 0.8; } }
+@keyframes wx-drift { from { transform: translateX(-1.5px); } to { transform: translateX(1.5px); } }
+@keyframes wx-fall {
+  0% { transform: translateY(-3px); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(8px); opacity: 0; }
+}
+@keyframes wx-snow {
+  0% { transform: translate(0, -3px); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(2px, 9px); opacity: 0; }
+}
+@keyframes wx-flash {
+  0%, 100% { opacity: 0.35; }
+  6% { opacity: 1; }
+  10% { opacity: 0.4; }
+  14% { opacity: 1; }
+  30% { opacity: 0.35; }
+}
+@keyframes wx-slide { from { transform: translateX(-3px); } to { transform: translateX(3px); } }

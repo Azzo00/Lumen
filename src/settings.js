@@ -142,6 +142,18 @@ async function init() {
   };
   bind('hide-fullscreen', 'hideFullscreen');
   bind('hide-in-share', 'hideInShare');
+  bind('cover-gradient', 'coverGradient');
+  bind('bass-glow', 'bassGlow');
+  const choice = (id, get, set) => {
+    $(id).value = get();
+    $(id).addEventListener('change', (e) => {
+      set(e.target.value);
+      save();
+    });
+  };
+  choice('theme', () => s.theme || 'dark', (v) => (s.theme = v));
+  choice('visualizer', () => s.visualizer || 'bars', (v) => (s.visualizer = v));
+  choice('vinyl', () => (s.vinyl ? 'vinyl' : 'square'), (v) => (s.vinyl = v === 'vinyl'));
   bind('pause-on-calls', 'pauseOnCalls');
   bind('notifications', 'notifications');
   bind('notification-preview', 'notificationPreview');

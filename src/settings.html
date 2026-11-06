@@ -32,6 +32,31 @@
       <input type="color" id="accent-color" />
     </div>
     <div class="row">
+      <label for="theme">Tema</label>
+      <select id="theme">
+        <option value="dark">Scuro</option>
+        <option value="oled">Nero OLED</option>
+        <option value="glass">Vetro</option>
+        <option value="light">Chiaro</option>
+      </select>
+    </div>
+    <div class="row">
+      <label for="vinyl">Copertina</label>
+      <select id="vinyl">
+        <option value="square">Quadrata</option>
+        <option value="vinyl">Vinile che gira</option>
+      </select>
+    </div>
+    <div class="row">
+      <label for="visualizer">Visualizzatore</label>
+      <select id="visualizer">
+        <option value="bars">Barre</option>
+        <option value="ring">Onda attorno alla copertina</option>
+      </select>
+    </div>
+    <label class="check"><input type="checkbox" id="cover-gradient" /> Sfondo sfumato con i colori della copertina</label>
+    <label class="check"><input type="checkbox" id="bass-glow" /> Bagliore sotto la notch a ritmo dei bassi</label>
+    <div class="row">
       <label for="scale">Dimensione</label>
       <input type="range" id="scale" min="85" max="125" step="5" />
       <span class="val" id="scale-val"></span>

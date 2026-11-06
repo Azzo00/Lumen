@@ -6,7 +6,9 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div id="halo"></div>
   <div id="pill" data-view="collapsed">
+    <div class="tint"></div>
     <div class="glow"></div>
 
     <!-- Collapsed / peek -->
@@ -24,7 +26,7 @@
     <!-- Music -->
     <div class="view full" id="v-music">
       <div class="music-top">
-        <div class="art art-box" id="art"></div>
+        <div class="art-wrap"><canvas id="ring" width="168" height="168"></canvas><div class="art art-box" id="art"></div></div>
         <div class="meta">
           <div class="app" id="m-app"></div>
           <div class="title" id="m-title"></div>
