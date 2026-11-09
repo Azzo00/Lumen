@@ -1026,13 +1026,14 @@ listen('agenda', ({ payload }) => onAgenda(payload));
 invoke('agenda_snapshot').then((a) => a && onAgenda(a));
 
 /** The meeting the collapsed notch should talk about, if any. */
-function meetingNow(now = Date.now()) {
+/** Meeting to show: one that started less than a minute ago, or the next one within `ahead`. */
+function meetingNow(now = Date.now(), ahead = 60 * MIN) {
   const evs = agenda.events.filter((e) => !e.allDay && !e.free && e.end > now);
   // a meeting that has started stays in the collapsed notch for one minute only
   const live = evs.find((e) => e.start <= now && now - e.start < MIN);
   if (live) return { e: live, live: true, mins: Math.floor((now - live.start) / MIN) };
   const next = evs.find((e) => e.start > now);
-  if (next && next.start - now <= 60 * MIN) return { e: next, live: false, mins: Math.ceil((next.start - now) / MIN) };
+  if (next && next.start - now <= ahead) return { e: next, live: false, mins: Math.ceil((next.start - now) / MIN) };
   return null;
 }
 const isUrgent = (m) => !!m && (m.live || m.mins <= 15);
@@ -1089,7 +1090,8 @@ function updateMini() {
   const text = $('mini-text');
   const sub = $('mini-sub');
   const playing = media.active && media.playing;
-  const m = meetingNow();
+  // the collapsed notch shows a meeting only from one minute before to one minute after its start
+  const m = meetingNow(Date.now(), MIN);
   // An imminent meeting beats the music; otherwise it only replaces the clock.
   const showMeeting = !!m && (isUrgent(m) || !playing);
   if (showMeeting) {
