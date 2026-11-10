@@ -146,7 +146,7 @@ async function init() {
     $(id).checked = s[key];
     $(id).addEventListener('change', (e) => {
       s[key] = e.target.checked;
-      $('notification-preview').disabled = !s.notifications;
+      ['notification-preview', 'notification-colors', 'notification-breathe'].forEach((x) => ($(x).disabled = !s.notifications));
       save();
     });
   };
@@ -186,9 +186,11 @@ async function init() {
   bind('pause-on-calls', 'pauseOnCalls');
   bind('notifications', 'notifications');
   bind('notification-preview', 'notificationPreview');
+  bind('notification-colors', 'notificationColors');
+  bind('notification-breathe', 'notificationBreathe');
   bind('device-popups', 'devicePopups');
   bind('download-popups', 'downloadPopups');
-  $('notification-preview').disabled = !s.notifications;
+  ['notification-preview', 'notification-colors', 'notification-breathe'].forEach((x) => ($(x).disabled = !s.notifications));
 
   const text = (id, key) => {
     $(id).value = s[key] || '';

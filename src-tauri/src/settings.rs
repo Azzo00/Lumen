@@ -53,6 +53,10 @@ pub struct Settings {
     pub notifications: bool,
     /// Show the text of notifications, or only the app name.
     pub notification_preview: bool,
+    /// Popups take the colour of the app that sent them.
+    pub notification_colors: bool,
+    /// The collapsed notch breathes slowly until unseen notifications are looked at.
+    pub notification_breathe: bool,
     pub device_popups: bool,
     pub download_popups: bool,
     /// the shelf view was added to `modes` once (0.6.0); after that the user decides
@@ -92,6 +96,8 @@ impl Default for Settings {
             pause_on_calls: true,
             notifications: true,
             notification_preview: true,
+            notification_colors: true,
+            notification_breathe: true,
             device_popups: true,
             download_popups: true,
             shelf_added: false,

@@ -1561,3 +1561,43 @@ html[data-docked] #pill {
 html[data-docked] .top-fade {
   display: block;
 }
+
+/* ---------- popups in the colour of the app that sent them ---------- */
+#pill.app-colored[data-view="toast"] #v-toast {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--app) 24%, transparent), transparent 62%);
+}
+#pill.app-colored[data-view="toast"] .toast-app {
+  color: var(--app);
+}
+#pill.app-colored[data-view="toast"] .glow {
+  opacity: 1;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--app) 75%, transparent);
+}
+#pill.app-colored[data-view="toast"] #toast-icon {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--app) 55%, transparent);
+}
+
+/* ---------- unseen notifications: the collapsed notch breathes in their colour ---------- */
+#pill.unseen[data-view="collapsed"] .glow {
+  opacity: 1;
+  animation: breathe 3.2s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%, 100% {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--unseen) 30%, transparent);
+  }
+  50% {
+    box-shadow: inset 0 0 0 2px var(--unseen), inset 0 0 16px color-mix(in srgb, var(--unseen) 45%, transparent);
+  }
+}
+#pill.unseen[data-view="collapsed"] {
+  animation: breathe-out 3.2s ease-in-out infinite;
+}
+@keyframes breathe-out {
+  0%, 100% {
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--unseen) 15%, transparent), 0 10px 30px var(--pill-shadow);
+  }
+  50% {
+    box-shadow: 0 4px 22px color-mix(in srgb, var(--unseen) 75%, transparent), 0 10px 30px var(--pill-shadow);
+  }
+}

@@ -241,6 +241,7 @@ function scheduleCollapse(delay = 300) {
 
 listen('hover', ({ payload }) => {
   hovering = payload;
+  if (hovering) markSeen();
   // A clickable popup (notification, meeting, git) stays put under the mouse instead of opening the views.
   if (toastActive && !expanded && currentToast?.action) {
     clearTimeout(toastTimer);
@@ -1364,12 +1365,25 @@ function nextToast() {
   pill.classList.remove('toast-hover', 'toast-action');
   if (!t) {
     toastActive = false;
-    pill.classList.remove('alert');
+    pill.classList.remove('alert', 'app-colored');
     // still under the mouse: open the views as a normal hover would
     if (hovering) expand();
     else render();
     return;
   }
+  paintToast(t);
+  toastActive = true;
+  render();
+  armToastTimer(t);
+}
+
+function armToastTimer(t) {
+  clearTimeout(toastTimer);
+  if (hovering && t.action) pill.classList.add('toast-hover');
+  else toastTimer = setTimeout(nextToast, t.duration || (t.body && t.body.length > 30 ? 5000 : 3200));
+}
+
+function paintToast(t) {
   const icon = $('toast-icon');
   icon.classList.toggle('plain', !t.icon);
   icon.classList.toggle('has-img', !!t.icon);
@@ -1396,11 +1410,9 @@ function nextToast() {
   }
   pill.classList.toggle('toast-action', !!t.action);
   pill.classList.toggle('alert', !!t.alert);
-  toastActive = true;
-  render();
-  clearTimeout(toastTimer);
-  if (hovering && t.action) pill.classList.add('toast-hover');
-  else toastTimer = setTimeout(nextToast, t.duration || (t.body && t.body.length > 30 ? 5000 : 3200));
+  const colored = !!(t.color && settings?.notificationColors !== false);
+  pill.classList.toggle('app-colored', colored);
+  if (colored) pill.style.setProperty('--app', themedColor(t.color));
 }
 
 $('v-toast').addEventListener('click', () => {
@@ -1411,12 +1423,138 @@ $('v-toast').addEventListener('click', () => {
   nextToast();
 });
 
-listen('notification', ({ payload: n }) => {
+/* ---------- app colours ---------- */
+// Official colours of common apps (checked against the app id and name); every other
+// app gets the main colour of its own icon.
+const BRAND_COLORS = [
+  [['teams'], '#7b83eb'],
+  [['outlook', 'olk'], '#2e8fe0'],
+  [['slack'], '#e01e5a'],
+  [['whatsapp'], '#25d366'],
+  [['telegram'], '#2aabee'],
+  [['signal'], '#3a76f0'],
+  [['discord'], '#5865f2'],
+  [['spotify'], '#1db954'],
+  [['zoom'], '#2d8cff'],
+  [['skype'], '#00aff0'],
+  [['onenote'], '#a259d9'],
+  [['winword', 'word'], '#2b7cd3'],
+  [['excel'], '#21a366'],
+  [['powerpnt', 'powerpoint'], '#d35230'],
+  [['jira', 'atlassian'], '#2684ff'],
+  [['github'], '#a371f7'],
+  [['chrome'], '#4285f4'],
+  [['msedge', 'edge'], '#1fa3e0'],
+  [['firefox'], '#ff7139'],
+  [['brave'], '#fb542b'],
+  [['opera'], '#ff1b2d'],
+  [['vscode', 'code.exe', 'visual studio code'], '#2f9fe8'],
+  [['securityhealth', 'windows security', 'defender'], '#3b8ee8'],
+  [['phone link', 'yourphone'], '#4cc2ff'],
+];
+const appColorCache = new Map();
+
+function iconColor(src) {
+  return new Promise((resolve) => {
+    if (!src) return resolve(null);
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = c.height = 24;
+      const ctx = c.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0, 24, 24);
+      const px = ctx.getImageData(0, 0, 24, 24).data;
+      let r = 0, g = 0, b = 0, wsum = 0, n = 0;
+      for (let i = 0; i < px.length; i += 4) {
+        if (px[i + 3] < 128) continue; // transparent background of the icon
+        const max = Math.max(px[i], px[i + 1], px[i + 2]);
+        const min = Math.min(px[i], px[i + 1], px[i + 2]);
+        const sat = max ? (max - min) / max : 0;
+        const w = sat * sat * (max / 255);
+        r += px[i] * w;
+        g += px[i + 1] * w;
+        b += px[i + 2] * w;
+        wsum += w;
+        n++;
+      }
+      // a grey/black/white icon has no colour of its own
+      if (!n || wsum / n < 0.05) return resolve(null);
+      resolve(rgbToHsl(r / wsum, g / wsum, b / wsum));
+    };
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
+async function appColor(n) {
+  const key = n.aumid || n.app || '';
+  if (appColorCache.has(key)) return appColorCache.get(key);
+  const hay = `${n.aumid || ''} ${n.app || ''}`.toLowerCase();
+  const brand = BRAND_COLORS.find(([keys]) => keys.some((k) => hay.includes(k)));
+  let hsl = null;
+  if (brand) {
+    const hex = brand[1];
+    hsl = rgbToHsl(...[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)));
+  } else hsl = await iconColor(n.icon);
+  appColorCache.set(key, hsl);
+  return hsl;
+}
+
+/** The app colour made readable on the current theme. */
+function themedColor([h, s, l]) {
+  const light = document.documentElement.dataset.theme === 'light';
+  s = Math.max(s, 0.5);
+  l = light ? Math.min(Math.max(l, 0.36), 0.48) : Math.min(Math.max(l, 0.55), 0.7);
+  return `hsl(${h} ${Math.round(s * 100)}% ${Math.round(l * 100)}%)`;
+}
+
+/* ---------- unseen notifications ---------- */
+let unseen = 0;
+function markSeen() {
+  if (!unseen) return;
+  unseen = 0;
+  pill.classList.remove('unseen');
+}
+function addUnseen(color) {
+  if (settings?.notificationBreathe === false) return;
+  unseen++;
+  pill.style.setProperty('--unseen', color ? themedColor(color) : 'var(--accent)');
+  pill.classList.add('unseen');
+}
+
+/* ---------- notifications: several from the same app become one popup ---------- */
+function stackLabel(t) {
+  return t.count > 1 ? `${t.count} messaggi da ${t.baseApp}` : t.baseApp;
+}
+
+listen('notification', async ({ payload: n }) => {
+  const color = await appColor(n);
+  const group = n.aumid || n.app;
+  if (!hovering) addUnseen(color);
+  // same app as the popup on screen, or as one still waiting: update that one
+  const same = (t) => t && t.group === group && t.kind === 'notification';
+  const target = toastActive && same(currentToast) ? currentToast : toastQueue.find(same);
+  if (target) {
+    target.count++;
+    target.title = n.title;
+    target.body = n.body;
+    target.app = stackLabel(target);
+    if (target === currentToast) {
+      paintToast(target);
+      armToastTimer(target); // stays a little longer, the new message must be readable
+    }
+    return;
+  }
   showToast({
+    kind: 'notification',
+    group,
+    count: 1,
+    baseApp: n.app,
     app: n.app,
     title: n.title,
     body: n.body,
     icon: n.icon,
+    color,
     side: n.aumid ? '›' : '',
     sideClass: 'chev',
     action: n.aumid ? () => invoke('open_app', { aumid: n.aumid }) : null,
